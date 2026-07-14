@@ -12,6 +12,7 @@ import {
   debounce, animateBalanceTick
 } from '../utils.js';
 import { showToast } from '../components/toast.js';
+import { icons }     from '../icons.js';
 
 let selectedCustomerId = null;
 let viewYear  = new Date().getFullYear();
@@ -149,9 +150,9 @@ function renderCalendarPanel(container, customer) {
     <div class="card">
       <div class="card__body">
         <div class="month-nav" style="margin-bottom:var(--sp-4);">
-          <button class="month-nav__btn" id="prev-month" aria-label="Previous month">‹</button>
+          <button class="month-nav__btn" id="prev-month" aria-label="Previous month">${icons.chevronLeft}</button>
           <div class="month-nav__title">${formatMonthYear(viewYear, viewMonth)}</div>
-          <button class="month-nav__btn" id="next-month" aria-label="Next month">›</button>
+          <button class="month-nav__btn" id="next-month" aria-label="Next month">${icons.chevronRight}</button>
         </div>
 
         <!-- Weekday headers -->
