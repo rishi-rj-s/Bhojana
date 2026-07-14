@@ -1052,6 +1052,12 @@
   gap: var(--sp-1);
 }
 
+@media (min-width: 768px) {
+  .calendar-grid {
+    gap: var(--sp-2);
+  }
+}
+
 .calendar-weekday {
   text-align: center;
   font-size: 9px;

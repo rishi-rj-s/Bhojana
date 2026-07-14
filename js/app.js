@@ -163,7 +163,17 @@ function setupEventListeners() {
 function setupServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(err => {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const installingWorker = reg.installing;
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'activated') {
+              console.log('New Service Worker activated. Reloading page...');
+              window.location.reload();
+            }
+          });
+        });
+      }).catch(err => {
         console.warn('SW registration failed:', err);
       });
     });
