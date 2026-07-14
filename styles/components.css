@@ -125,12 +125,14 @@
 }
 
 /* ── Today's Hero Card (Specials chalkboard style) ───────── */
+/* ── Today's Specials Card (Boutique Specials Menu) ───────── */
 .today-hero {
-  background: var(--leaf-900);
-  border-radius: var(--radius-lg);
+  background: var(--rice-100);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  color: #fff;
-  box-shadow: var(--shadow-md);
+  color: var(--ink-900);
+  box-shadow: var(--shadow-sm);
   position: relative;
 }
 
@@ -158,7 +160,7 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--gold-400);
+  color: var(--gold-600);
 }
 
 .today-hero__title {
@@ -166,14 +168,14 @@
   font-size: clamp(1.75rem, 5vw, 2.35rem);
   font-weight: 300;
   margin-top: var(--sp-1);
-  color: #fff;
+  color: var(--leaf-900);
   line-height: 1.2;
 }
 
 .today-hero__title em {
   font-style: italic;
   font-weight: 400;
-  color: var(--gold-400);
+  color: var(--gold-600);
 }
 
 .today-hero__menu {
@@ -191,7 +193,7 @@
 }
 
 .today-meal {
-  border-left: 1px dashed rgba(255,255,255,0.22);
+  border-left: 1px dashed var(--color-border);
   padding-left: var(--sp-4);
   background: none;
   border-right: none;
@@ -203,7 +205,7 @@
 @media (max-width: 560px) {
   .today-meal {
     border-left: none;
-    border-top: 1px dashed rgba(255,255,255,0.22);
+    border-top: 1px dashed var(--color-border);
     padding-left: 0;
     padding-top: var(--sp-3);
   }
@@ -224,14 +226,14 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--gold-400);
+  color: var(--gold-600);
   margin-bottom: 2px;
 }
 
 .today-meal__name {
   font-size: var(--text-base);
   line-height: var(--leading-snug);
-  color: rgba(255,255,255,0.92);
+  color: var(--ink-900);
   font-weight: var(--weight-medium);
 }
 
@@ -239,7 +241,7 @@
 .menu-day-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
   overflow: hidden;
   transition:
@@ -251,8 +253,9 @@
 
 .menu-day-card__header {
   padding: var(--sp-3) var(--sp-4);
-  background: var(--leaf-900);
-  color: #fff;
+  border-bottom: 1px dashed var(--color-border);
+  background: transparent;
+  color: var(--leaf-900);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -260,12 +263,12 @@
 
 .menu-day-card__header .day-name {
   font-family: var(--font-display);
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   font-weight: var(--weight-semibold);
   letter-spacing: -0.01em;
 }
 
-.menu-day-card__body { padding: var(--sp-2) var(--sp-3); }
+.menu-day-card__body { padding: var(--sp-3) var(--sp-4); }
 
 .menu-meal-row {
   display: flex;
@@ -307,12 +310,11 @@
 .menu-meal-row__input:focus { box-shadow: 0 0 0 2px var(--gold-500); }
 
 /* ── Customer Card ───────────────────────────────────────── */
-/* Inspired by Linear list items — compact, info-dense */
 .customer-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--sp-4) var(--sp-4);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4);
   box-shadow: var(--shadow-xs);
   display: flex;
   align-items: flex-start;
@@ -333,11 +335,11 @@
 
 /* Avatar — colored initials */
 .customer-card__avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--leaf-100);
-  color: var(--leaf-700);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: var(--rice-200);
+  color: var(--leaf-900);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -346,6 +348,7 @@
   font-weight: var(--weight-bold);
   flex-shrink: 0;
   text-transform: uppercase;
+  border: 1px solid var(--color-border);
 }
 
 .customer-card__id {
@@ -428,8 +431,8 @@
   justify-content: center;
   gap: var(--sp-2);
   padding: 0 var(--sp-4);
-  height: 38px;
-  border-radius: var(--radius-md);
+  height: 36px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
@@ -456,33 +459,33 @@
 
 .btn:active { transform: scale(0.96); }
 
-/* Primary — gold */
+/* Primary — deep forest green CTA */
 .btn--primary {
-  background: var(--gold-500);
-  color: var(--ink-900);
-  border-color: var(--gold-500);
-  box-shadow: 0 1px 3px rgba(221,166,46,0.25);
+  background: var(--leaf-900);
+  color: #ffffff;
+  border-color: var(--leaf-900);
+  box-shadow: var(--shadow-sm);
 }
 .btn--primary:hover {
-  background: var(--gold-400);
-  box-shadow: 0 4px 12px rgba(221,166,46,0.35);
+  background: var(--leaf-700);
+  border-color: var(--leaf-700);
 }
 
-/* Secondary — green outline */
+/* Secondary — clean outline */
 .btn--secondary {
   background: transparent;
-  color: var(--leaf-500);
-  border-color: var(--leaf-300);
+  color: var(--leaf-900);
+  border-color: var(--ink-300);
 }
-.btn--secondary:hover { background: var(--leaf-100); border-color: var(--leaf-400); }
+.btn--secondary:hover { background: var(--rice-200); border-color: var(--ink-500); }
 
 /* Ghost — neutral */
 .btn--ghost {
   background: transparent;
-  color: var(--color-text-mid);
-  border-color: var(--color-border);
+  color: var(--ink-700);
+  border-color: transparent;
 }
-.btn--ghost:hover { background: var(--rice-100); border-color: var(--color-border-mid); color: var(--color-text); }
+.btn--ghost:hover { background: var(--rice-200); color: var(--ink-900); }
 
 /* Danger */
 .btn--danger {
@@ -495,8 +498,8 @@
 /* Icon-only */
 .btn--icon {
   padding: 0;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
 }
 
 /* Small */
