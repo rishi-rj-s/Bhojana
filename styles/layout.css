@@ -361,10 +361,10 @@
 @media (min-width: 768px) {
   #main-content {
     margin-left: var(--sidebar-w);
-    padding-top: var(--sp-8);
-    padding-bottom: var(--sp-10);
-    padding-left: var(--sp-8);
-    padding-right: var(--sp-8);
+    padding-top: var(--sp-6);
+    padding-bottom: var(--sp-8);
+    padding-left: var(--sp-6);
+    padding-right: var(--sp-6);
   }
 }
 
@@ -372,14 +372,14 @@
 .page-container {
   max-width: var(--content-max);
   margin: 0 auto;
-  padding-top: var(--sp-6);
-  padding-bottom: var(--sp-8);
+  padding-top: var(--sp-3);
+  padding-bottom: var(--sp-6);
 }
 
 /* ── Page: Home ──────────────────────────────────────────── */
 /* Greeting row */
 .home-greeting {
-  margin-bottom: var(--sp-6);
+  margin-bottom: var(--sp-5);
 }
 
 .home-greeting__eyebrow {
@@ -420,11 +420,14 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--sp-3);
-  margin-bottom: var(--sp-6);
+  margin-bottom: var(--sp-5);
 }
 
 @media (min-width: 560px) {
-  .home-stats-row { grid-template-columns: repeat(4, 1fr); }
+  .home-stats-row {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-5);
+  }
 }
 
 /* Home content grid */
@@ -434,7 +437,10 @@
 }
 
 @media (min-width: 680px) {
-  .home-grid { grid-template-columns: 1fr 1fr; }
+  .home-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-6);
+  }
   .home-grid__full { grid-column: 1 / -1; }
 }
 
@@ -449,7 +455,17 @@
 }
 
 @media (min-width: 900px) {
-  .menu-days-grid { grid-template-columns: repeat(3, 1fr); }
+  .menu-days-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-5);
+  }
+}
+
+@media (min-width: 1200px) {
+  .menu-days-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-5);
+  }
 }
 
 /* ── Page: Customers ─────────────────────────────────────── */
@@ -470,7 +486,7 @@
   .schedule-layout {
     flex-direction: row;
     align-items: flex-start;
-    gap: var(--sp-5);
+    gap: var(--sp-6);
   }
 }
 
