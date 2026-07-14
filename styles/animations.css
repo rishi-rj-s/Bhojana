@@ -1,0 +1,228 @@
+/* =========================================================
+   BHOJANA — Animations & Motion
+   Kasavu shimmer, card tilt, toast slides, balance tick
+   All effects respect prefers-reduced-motion.
+   ========================================================= */
+
+/* ── Keyframes ───────────────────────────────────────────── */
+@keyframes kasavu-shimmer {
+  0%   { background-position: 200% 0, 0 100%; }
+  100% { background-position: -200% 0, 0 100%; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes tick-up {
+  0%   { transform: translateY(4px); opacity: 0; }
+  30%  { transform: translateY(0);   opacity: 1; }
+  70%  { transform: translateY(0);   opacity: 1; }
+  100% { transform: translateY(-4px);opacity: 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* ── Page Entrance ───────────────────────────────────────── */
+.page-enter {
+  animation: slide-up var(--duration-slow) var(--ease-out) both;
+}
+
+/* ── Stat Card Tilt (desktop hover / mobile press) ───────── */
+@media (hover: hover) and (pointer: fine) {
+  .stat-card {
+    perspective: 800px;
+    transform-style: preserve-3d;
+  }
+
+  .stat-card:hover {
+    /* JS will add --tilt-x / --tilt-y from mousemove */
+    transform:
+      perspective(800px)
+      rotateX(var(--tilt-x, 0deg))
+      rotateY(var(--tilt-y, 0deg))
+      translateZ(4px);
+    transition:
+      transform   var(--duration-spring) var(--ease-spring),
+      box-shadow  var(--duration-base)   var(--ease-out),
+      border-color var(--duration-base)  var(--ease-out);
+  }
+}
+
+/* Menu day card tilt */
+@media (hover: hover) and (pointer: fine) {
+  .menu-day-card {
+    perspective: 800px;
+  }
+
+  .menu-day-card:hover {
+    transform:
+      perspective(800px)
+      rotateX(var(--tilt-x, 0deg))
+      rotateY(var(--tilt-y, 0deg))
+      translateZ(2px);
+    transition:
+      transform  var(--duration-spring) var(--ease-spring),
+      box-shadow var(--duration-base)   var(--ease-out);
+  }
+}
+
+/* ── Balance Tick ────────────────────────────────────────── */
+.balance-tick {
+  display: inline-block;
+  animation: tick-up 0.4s var(--ease-out) both;
+}
+
+/* ── Loading spinner ─────────────────────────────────────── */
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--gold-500);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Loading overlay (DB init) ───────────────────────────── */
+#loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--leaf-900);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-6);
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+
+#loading-overlay.is-hiding {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.loading-logo__leaf {
+  width: 64px; height: 64px;
+  background: var(--gold-500);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  box-shadow: var(--shadow-gold);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.loading-logo__name {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  color: #fff;
+  letter-spacing: var(--tracking-snug);
+}
+
+.loading-rule {
+  width: 120px;
+  height: calc(var(--kasavu-thick) + var(--kasavu-gap) + var(--kasavu-thin));
+  background:
+    linear-gradient(
+      90deg,
+      var(--kasavu-dark) 0%,
+      var(--gold-300) 40%,
+      var(--gold-200) 60%,
+      var(--kasavu-dark) 100%
+    ) 0 0 / 200% var(--kasavu-thick) no-repeat,
+    linear-gradient(var(--kasavu-light), var(--kasavu-light)) 0 100% / 100% var(--kasavu-thin) no-repeat;
+  animation: kasavu-shimmer 1.6s ease-in-out infinite;
+}
+
+.loading-text {
+  font-size: var(--text-sm);
+  color: rgba(255,255,255,0.45);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ── Attendance tap ripple ───────────────────────────────── */
+.cal-day:not(.cal-day--locked):not(.cal-day--empty)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255,255,255,0.2);
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+}
+
+.cal-day:not(.cal-day--locked):not(.cal-day--empty):active::after {
+  opacity: 1;
+}
+
+/* ── ===== REDUCED MOTION OVERRIDES ===== ──────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .stat-card:hover {
+    transform: none !important;
+  }
+
+  .menu-day-card:hover {
+    transform: none !important;
+  }
+
+  .balance-tick {
+    animation: none !important;
+  }
+
+  .kasavu-rule--loading,
+  .loading-rule {
+    animation: none !important;
+    background:
+      linear-gradient(var(--kasavu-dark), var(--kasavu-dark)) 0 0 / 100% var(--kasavu-thick) no-repeat,
+      linear-gradient(var(--kasavu-light), var(--kasavu-light)) 0 100% / 100% var(--kasavu-thin) no-repeat;
+  }
+
+  .loading-logo__leaf {
+    animation: none !important;
+  }
+
+  .page-enter {
+    animation: none !important;
+  }
+}

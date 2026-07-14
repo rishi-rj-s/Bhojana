@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Bhojana — Mess Manager</title>
+  <meta name="description" content="Menu, customers and meal schedule tracking for Bhojana mess service in Palarivattom, Kaloor." />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#152E22" />
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bhojana" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+
+  <!-- Styles (order matters: tokens → base → components → layout → animations) -->
+  <link rel="stylesheet" href="/styles/tokens.css" />
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/components.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/animations.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════
+       LOADING OVERLAY — shown until DB is ready
+  ═══════════════════════════════════════════════════════ -->
+  <div id="loading-overlay" role="status" aria-label="Loading Bhojana">
+    <div class="loading-logo">
+      <div class="loading-logo__leaf" aria-hidden="true">🌿</div>
+      <div class="loading-logo__name">Bhojana</div>
+      <div class="loading-rule"></div>
+    </div>
+    <div class="loading-text">Loading your mess manager…</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       APP SHELL
+  ═══════════════════════════════════════════════════════ -->
+  <div id="app-shell">
+
+    <!-- ── Sidebar (desktop) ──────────────────────────── -->
+    <nav id="sidebar" aria-label="Main navigation">
+      <div class="sidebar__logo">
+        <div class="logo-mark">
+          <div class="logo-mark__leaf" aria-hidden="true">🌿</div>
+          <div class="logo-mark__text">
+            <span class="logo-mark__name">Bhojana</span>
+            <span class="logo-mark__tagline">Mess Manager</span>
+          </div>
+        </div>
+      </div>
+      <div class="kasavu-rule sidebar__rule" aria-hidden="true"></div>
+
+      <div class="sidebar__nav" id="sidebar-nav" role="menubar" aria-label="Page navigation">
+        <!-- Populated by app.js -->
+      </div>
+
+      <div class="sidebar__bottom">
+        <button class="nav-item w-full" id="settings-btn" aria-label="Settings">
+          <span class="nav-item__icon">⚙️</span>
+          <span class="nav-item__label">Settings</span>
+        </button>
+        <!-- Android install button (hidden until beforeinstallprompt) -->
+        <div id="install-btn-container" style="display:none;margin-top:var(--sp-2);">
+          <button id="install-btn" class="btn btn--primary w-full" style="font-size:var(--text-xs);">
+            📲 Add to Home Screen
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ── Mobile Top Bar ─────────────────────────────── -->
+    <header id="topbar" aria-label="App header">
+      <div class="topbar__logo">
+        <div class="topbar__leaf" aria-hidden="true">🌿</div>
+        <span class="topbar__name">Bhojana</span>
+      </div>
+      <button class="nav-item" id="settings-btn" style="width:44px;justify-content:center;border-radius:var(--radius-md);" aria-label="Settings">
+        <span class="nav-item__icon">⚙️</span>
+      </button>
+      <div class="topbar__rule" aria-hidden="true"></div>
+    </header>
+
+    <!-- ── Main Content ───────────────────────────────── -->
+    <main id="main-content" aria-live="polite" aria-label="Page content">
+      <!-- Pages rendered here by router -->
+    </main>
+
+    <!-- ── Mobile Bottom Nav ──────────────────────────── -->
+    <nav id="bottom-nav" aria-label="Mobile navigation">
+      <div class="bottom-nav__items" id="bottom-nav-items" role="tablist">
+        <!-- Populated by app.js -->
+      </div>
+    </nav>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TOAST & MODAL containers (outside app shell)
+  ═══════════════════════════════════════════════════════ -->
+  <div id="toast-container" role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <!-- ══════════════════════════════════════════════════════
+       VENDOR SCRIPTS (non-module, global)
+  ═══════════════════════════════════════════════════════ -->
+  <script src="/vendor/sql-wasm.js"></script>
+  <script src="/vendor/html2canvas.min.js"></script>
+
+  <!-- ══════════════════════════════════════════════════════
+       APP (ES module)
+  ═══════════════════════════════════════════════════════ -->
+  <script type="module" src="/js/app.js"></script>
+
+</body>
+</html>
