@@ -7,6 +7,7 @@ import { showToast } from '../components/toast.js';
 import { createModal } from '../components/modal.js';
 import { showConfirm } from '../components/confirm.js';
 import { formatDate, formatDateShort, escapeHtml } from '../utils.js';
+import { icons } from '../icons.js';
 
 const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const MEALS    = ['breakfast','lunch','dinner'];
@@ -64,7 +65,7 @@ function renderMenuGrid(container) {
             <div class="menu-meal-row" data-day="${day}" data-meal="${meal}">
               <span class="menu-meal-row__label">${meal}</span>
               <span class="menu-meal-row__value meal-text" data-day="${day}" data-meal="${meal}">${escapeHtml(val) || '<span class="text-faint">—</span>'}</span>
-              <button class="btn btn--ghost btn--sm btn--icon edit-meal-btn" aria-label="Edit ${meal} for ${day}" data-day="${day}" data-meal="${meal}" style="flex-shrink:0;width:32px;height:32px;padding:0;">✎</button>
+              <button class="btn btn--ghost btn--sm btn--icon edit-meal-btn" aria-label="Edit ${meal} for ${day}" data-day="${day}" data-meal="${meal}" style="flex-shrink:0;width:32px;height:32px;padding:0;">${icons.edit}</button>
             </div>
           `;
         }).join('')}
@@ -137,9 +138,13 @@ function renderSpecialDays(container) {
 
   if (days.length === 0) {
     list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state__icon">🎉</div>
-        <div class="empty-state__title">No special days yet</div>
+      <div class="empty-state" style="padding:var(--sp-8) 0 var(--sp-4);">
+        <div class="empty-state__icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+        </div>
+        <div class="empty-state__title" style="font-family:var(--font-display);font-weight:600;">No special days yet</div>
         <div class="empty-state__text">Add Onam, Vishu, festivals, or any day with a different menu.</div>
       </div>
     `;
@@ -191,8 +196,8 @@ function specialDayCard(sd) {
         <div class="special-day-card__meals">${escapeHtml(meals)}</div>
       </div>
       <div class="flex gap-2 flex-none">
-        <button class="btn btn--ghost btn--sm special-day-edit-btn" data-id="${sd.id}" aria-label="Edit">✎</button>
-        <button class="btn btn--danger btn--sm special-day-delete-btn" data-id="${sd.id}" aria-label="Delete">✕</button>
+        <button class="btn btn--ghost btn--sm btn--icon special-day-edit-btn" data-id="${sd.id}" aria-label="Edit" title="Edit">${icons.edit}</button>
+        <button class="btn btn--danger btn--sm btn--icon special-day-delete-btn" data-id="${sd.id}" aria-label="Delete" title="Delete">${icons.trash}</button>
       </div>
     </div>
   `;

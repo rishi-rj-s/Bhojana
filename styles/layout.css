@@ -1,16 +1,32 @@
 /* =========================================================
    BHOJANA — Layout
-   Sidebar, bottom nav, mobile top bar, page containers
+   Sidebar, bottom nav, mobile top bar, page containers.
+   Mobile-first with dynamic viewport units + safe areas.
    ========================================================= */
+
+/* ── Safe Area Helpers ───────────────────────────────────── */
+:root {
+  /* Dynamic heights that account for browser chrome */
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+
+  /* Actual nav heights (including safe areas) */
+  --topbar-total: calc(var(--topbar-h) + var(--safe-top));
+  --nav-total:    calc(var(--nav-h) + var(--safe-bottom));
+}
 
 /* ── App Shell ───────────────────────────────────────────── */
 #app-shell {
   display: flex;
-  min-height: 100dvh;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
   background: var(--color-bg);
 }
 
-/* ── Sidebar (desktop) ───────────────────────────────────── */
+/* ── Sidebar (desktop ≥ 768px) ───────────────────────────── */
 #sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
@@ -24,15 +40,17 @@
   z-index: var(--z-nav);
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* Ensure content respects safe area on the left edge */
+  padding-left: var(--safe-left);
 }
 
-/* Hide sidebar on mobile, show bottom nav instead */
 @media (max-width: 767px) {
   #sidebar { display: none; }
 }
 
+/* ── Sidebar Brand / Logo ────────────────────────────────── */
 .sidebar__logo {
-  padding: var(--sp-6) var(--sp-6) var(--sp-4);
+  padding: var(--sp-6) var(--sp-5) var(--sp-3);
 }
 
 .logo-mark {
@@ -42,60 +60,60 @@
 }
 
 .logo-mark__leaf {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   background: var(--gold-500);
-  border-radius: var(--radius-md);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(221,166,46,0.35);
+  box-shadow: 0 0 0 1px rgba(221,166,46,0.25), 0 2px 8px rgba(221,166,46,0.3);
+  color: var(--leaf-900);
 }
 
 .logo-mark__text {
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
 .logo-mark__name {
   font-family: var(--font-display);
-  font-size: var(--text-lg);
+  font-size: 1.05rem;
   font-weight: var(--weight-bold);
   color: #fff;
   line-height: 1;
-  letter-spacing: var(--tracking-snug);
+  letter-spacing: -0.015em;
 }
 
 .logo-mark__tagline {
-  font-size: var(--text-xs);
-  color: rgba(255,255,255,0.45);
-  margin-top: 2px;
-  letter-spacing: var(--tracking-wide);
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* Kasavu rule under logo */
 .sidebar__rule {
-  margin: 0 var(--sp-6) var(--sp-4);
+  margin: var(--sp-1) var(--sp-5) var(--sp-3);
 }
 
-/* Nav items */
+/* ── Sidebar Navigation ──────────────────────────────────── */
 .sidebar__nav {
-  padding: 0 var(--sp-3);
+  padding: var(--sp-1) var(--sp-3);
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
+  gap: 2px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
+  padding: 9px var(--sp-3);
   border-radius: var(--radius-md);
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.5);
   cursor: pointer;
   transition:
     background  var(--duration-fast) var(--ease-out),
@@ -105,22 +123,31 @@
   width: 100%;
   text-align: left;
   text-decoration: none;
-  min-height: 44px;
+  position: relative;
+  min-height: 40px;
   -webkit-tap-highlight-color: transparent;
 }
 
 .nav-item:hover {
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.85);
 }
 
 .nav-item.is-active {
-  background: rgba(221,166,46,0.15);
-  color: var(--gold-400);
+  background: rgba(255,255,255,0.09);
+  color: #fff;
 }
 
-.nav-item.is-active .nav-item__icon {
-  color: var(--gold-500);
+/* Gold left-edge indicator for active item — the kasavu touch */
+.nav-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 2.5px;
+  background: var(--gold-500);
+  border-radius: 0 2px 2px 0;
 }
 
 .nav-item__icon {
@@ -130,33 +157,44 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.05rem;
+  opacity: 0.8;
+}
+
+.nav-item.is-active .nav-item__icon {
+  opacity: 1;
+  color: var(--gold-400);
 }
 
 .nav-item__label {
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  letter-spacing: 0.01em;
+  letter-spacing: -0.005em;
 }
 
-/* Sidebar bottom: settings */
+/* ── Sidebar Bottom ──────────────────────────────────────── */
 .sidebar__bottom {
   padding: var(--sp-3);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  margin-top: var(--sp-4);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: auto;
 }
 
 /* ── Mobile Top Bar ──────────────────────────────────────── */
 #topbar {
   display: none;
   position: fixed;
-  top: 0; left: 0; right: 0;
-  height: var(--topbar-h);
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Total height includes safe area (notch) */
+  height: var(--topbar-total);
+  padding-top: var(--safe-top);
   background: var(--color-sidebar);
   z-index: var(--z-nav);
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--sp-4);
+  padding-left: calc(var(--sp-4) + var(--safe-left));
+  padding-right: calc(var(--sp-4) + var(--safe-right));
+  gap: var(--sp-3);
 }
 
 @media (max-width: 767px) {
@@ -170,13 +208,15 @@
 }
 
 .topbar__leaf {
-  width: 28px; height: 28px;
+  width: 30px;
+  height: 30px;
   background: var(--gold-500);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
+  color: var(--leaf-900);
+  flex-shrink: 0;
 }
 
 .topbar__name {
@@ -184,37 +224,48 @@
   font-size: var(--text-md);
   font-weight: var(--weight-bold);
   color: #fff;
+  letter-spacing: -0.01em;
 }
 
+/* Kasavu rule at bottom of topbar */
 .topbar__rule {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: calc(var(--kasavu-thick) + var(--kasavu-gap) + var(--kasavu-thin));
   background:
-    linear-gradient(var(--kasavu-dark), var(--kasavu-dark)) 0 0 / 100% var(--kasavu-thick) no-repeat,
-    linear-gradient(var(--kasavu-light), var(--kasavu-light)) 0 100% / 100% var(--kasavu-thin) no-repeat;
+    linear-gradient(var(--kasavu-dark), var(--kasavu-dark))   0 0   / 100% var(--kasavu-thick) no-repeat,
+    linear-gradient(var(--kasavu-light), var(--kasavu-light)) 0 100% / 100% var(--kasavu-thin)  no-repeat;
 }
 
 /* ── Mobile Bottom Nav ───────────────────────────────────── */
 #bottom-nav {
   display: none;
   position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: var(--nav-h);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  /* Height includes iOS home indicator (safe area bottom) */
+  height: var(--nav-total);
+  padding-bottom: var(--safe-bottom);
   background: var(--color-sidebar);
   z-index: var(--z-nav);
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255,255,255,0.07);
+  /* Frosted glass when supported */
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 }
 
 @media (max-width: 767px) {
-  #bottom-nav { display: flex; }
+  #bottom-nav { display: block; }
 }
 
 .bottom-nav__items {
   display: flex;
   align-items: stretch;
   width: 100%;
-  height: 100%;
+  height: var(--nav-h); /* Inner height, ignoring safe area */
 }
 
 .bottom-nav__item {
@@ -223,49 +274,74 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: var(--sp-2) var(--sp-1);
-  color: rgba(255,255,255,0.5);
+  gap: 3px;
+  padding: var(--sp-1);
+  color: rgba(255,255,255,0.42);
   cursor: pointer;
   border: none;
   background: none;
   transition: color var(--duration-fast);
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  position: relative;
+  min-height: var(--nav-h);
 }
 
 .bottom-nav__item.is-active {
   color: var(--gold-400);
 }
 
-.bottom-nav__item:active {
-  opacity: 0.7;
+/* Active indicator: gold dot above icon */
+.bottom-nav__item.is-active::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: var(--gold-500);
 }
 
 .bottom-nav__icon {
-  font-size: 1.3rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
 }
 
 .bottom-nav__label {
-  font-size: 0.625rem;
+  font-size: 9px;
   font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
+  line-height: 1;
 }
 
 /* ── Main Content ────────────────────────────────────────── */
 #main-content {
   flex: 1;
   min-width: 0;
-  padding-bottom: calc(var(--nav-h) + var(--sp-6));
-  padding-top: calc(var(--topbar-h) + var(--sp-6));
-  padding-left: var(--sp-4);
-  padding-right: var(--sp-4);
+  overflow-y: auto;
+  /* 
+   * Mobile: padding accounts for the topbar + bottom nav
+   * dvh handles the dynamic browser chrome automatically since
+   * we scroll WITHIN this element, not the page.
+   */
 }
 
+/* Mobile content insets */
+@media (max-width: 767px) {
+  #main-content {
+    padding-top: var(--topbar-total);
+    padding-bottom: var(--nav-total);
+    padding-left: calc(var(--sp-4) + var(--safe-left));
+    padding-right: calc(var(--sp-4) + var(--safe-right));
+  }
+}
+
+/* Desktop content insets */
 @media (min-width: 768px) {
   #main-content {
     margin-left: var(--sidebar-w);
@@ -276,48 +352,87 @@
   }
 }
 
+/* Inner page wrapper - caps max width and centers */
 .page-container {
   max-width: var(--content-max);
   margin: 0 auto;
+  padding-top: var(--sp-6);
+  padding-bottom: var(--sp-8);
 }
 
 /* ── Page: Home ──────────────────────────────────────────── */
-.home-stats-grid {
+/* Greeting row */
+.home-greeting {
+  margin-bottom: var(--sp-6);
+}
+
+.home-greeting__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--gold-600);
+  margin-bottom: var(--sp-2);
+}
+
+.home-greeting__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 6vw, 3.25rem);
+  font-weight: 300;
+  color: var(--leaf-900);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+}
+
+.home-greeting__title em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--gold-600);
+}
+
+.home-greeting__sub {
+  font-size: var(--text-sm);
+  color: var(--ink-500);
+  margin-top: var(--sp-2);
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.01em;
+}
+
+/* Stats row — horizontal scrollable on mobile */
+.home-stats-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--sp-3);
   margin-bottom: var(--sp-6);
 }
 
-@media (min-width: 540px) {
-  .home-stats-grid { grid-template-columns: repeat(4, 1fr); }
+@media (min-width: 560px) {
+  .home-stats-row { grid-template-columns: repeat(4, 1fr); }
 }
 
+/* Home content grid */
 .home-grid {
   display: grid;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
 }
 
-@media (min-width: 640px) {
-  .home-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .home-grid__full {
-    grid-column: 1 / -1;
-  }
+@media (min-width: 680px) {
+  .home-grid { grid-template-columns: 1fr 1fr; }
+  .home-grid__full { grid-column: 1 / -1; }
 }
 
 /* ── Page: Menu ──────────────────────────────────────────── */
 .menu-days-grid {
   display: grid;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
 }
 
 @media (min-width: 480px) {
   .menu-days-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 900px) {
   .menu-days-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
@@ -325,19 +440,21 @@
 .customers-list {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
 }
 
 /* ── Page: Schedule ──────────────────────────────────────── */
 .schedule-layout {
-  display: grid;
-  gap: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
 }
 
 @media (min-width: 720px) {
   .schedule-layout {
-    grid-template-columns: 280px 1fr;
-    align-items: start;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--sp-5);
   }
 }
 
@@ -347,51 +464,49 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-}
-
-.schedule-customer-list {
-  max-height: 340px;
-  overflow-y: auto;
-  padding: var(--sp-2);
+  flex-shrink: 0;
 }
 
 @media (min-width: 720px) {
-  .schedule-customer-list { max-height: 520px; }
+  .schedule-customer-panel { width: 260px; }
+}
+
+.schedule-customer-list {
+  overflow-y: auto;
+  max-height: 260px;
+  padding: var(--sp-2);
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 720px) {
+  .schedule-customer-list { max-height: 480px; }
 }
 
 .schedule-calendar-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
+  flex: 1;
+  min-width: 0;
 }
 
-/* ── Print styles ────────────────────────────────────────── */
+/* ── Print ───────────────────────────────────────────────── */
 @media print {
-  #topbar,
-  #sidebar,
-  #bottom-nav,
-  .fab,
-  #toast-container,
-  .report-export-actions,
-  .schedule-customer-panel,
-  .month-nav,
-  .calendar-grid,
-  .calendar-weekday {
+  #topbar, #sidebar, #bottom-nav, .fab,
+  #toast-container, .report-export-actions,
+  .schedule-customer-panel, .month-nav,
+  .calendar-grid, .calendar-weekday,
+  .home-greeting, .home-stats-row,
+  .section-header .btn {
     display: none !important;
   }
 
-  #main-content {
-    margin: 0;
-    padding: 0;
-  }
+  #main-content { margin: 0; padding: 0; }
+  .report-card  { box-shadow: none; border-radius: 0; border: 1px solid #ddd; }
+  body          { background: white; }
+}
 
-  .report-card {
-    box-shadow: none;
-    border-radius: 0;
-    border: 1px solid #ddd;
-  }
-
-  body {
-    background: white;
-  }
+/* ── Responsive utility ──────────────────────────────────── */
+@media (max-width: 400px) {
+  .hide-xs { display: none !important; }
 }

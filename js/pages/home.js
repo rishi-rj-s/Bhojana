@@ -1,5 +1,6 @@
 /**
  * BHOJANA — Home Page (home.js)
+ * Editorial layout inspired by high-end culinary journals and boutique menus.
  */
 
 import * as DB from '../db.js';
@@ -11,12 +12,12 @@ import {
 import { showToast } from '../components/toast.js';
 
 export function renderHome(container) {
-  const today = todayISO();
-  const weekday = getWeekdayName(today);
+  const today    = todayISO();
+  const weekday  = getWeekdayName(today);
   const customers = DB.getCustomers();
-  const stats = DB.getHomeStats(today);
+  const stats    = DB.getHomeStats(today);
 
-  // Get today's menu (check special days first)
+  // Today's menu — special day overrides weekly template
   const special = DB.getSpecialDay(today);
   const menu = special ? {
     breakfast: special.breakfast,
@@ -31,7 +32,7 @@ export function renderHome(container) {
     return { ...m, label: null, isSpecial: false };
   })();
 
-  // "Needs Attention" list
+  // Needs attention
   const attention = customers
     .map(c => ({ ...c, status: getCustomerStatus(c, today) }))
     .filter(c => c.status !== 'active')
@@ -39,65 +40,81 @@ export function renderHome(container) {
       const order = { expiring: 0, soon: 1, expired: 2 };
       return (order[a.status] ?? 9) - (order[b.status] ?? 9);
     })
-    .slice(0, 6);
+    .slice(0, 5);
 
-  const html = `
+  const today_d = new Date();
+  // Premium mono date display: e.g., 14 / JUL / 2026
+  const dateStr = today_d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase().replace(/ /g, ' / ');
+  const dayStr  = today_d.toLocaleDateString('en-IN', { weekday: 'long' });
+
+  container.innerHTML = `
     <div class="page-container page-enter">
 
-      <!-- Section header -->
-      <div class="section-header">
-        <div>
-          <div class="section-header__title">Good ${getGreeting()}</div>
-          <div class="section-header__sub">${formatDate(today)} · ${weekday}</div>
-        </div>
+      <!-- ── Greeting (Editorial) ───────────────────────────── -->
+      <div class="home-greeting">
+        <div class="home-greeting__eyebrow">${dayStr} — ${dateStr}</div>
+        <h1 class="home-greeting__title">${renderGreetingTitle()}</h1>
+        <p class="home-greeting__sub">${customers.length === 0
+          ? 'Add your first customer to get started.'
+          : `${stats.active} active customer${stats.active !== 1 ? 's' : ''} &middot; ${stats.mealsToday} meal${stats.mealsToday !== 1 ? 's' : ''} to prepare today`
+        }</p>
       </div>
 
-      <!-- Stat cards -->
-      <div class="home-stats-grid" id="home-stats">
-        ${statCard('🏠', stats.active,            'Active Customers', 'green',   '')}
-        ${statCard('🍽️', stats.mealsToday,        'Meals Today',      'gold',    '')}
-        ${statCard('⚠️', stats.expiringSoon,       'Expiring Soon',   'rust',    'plans')}
-        ${statCard('₹',  formatCurrency(stats.collectionsMonth), 'This Month',  'green', '', true)}
+      <!-- ── Stat Cards (Ledger slips style) ────────────────── -->
+      <div class="home-stats-row" id="home-stats">
+        ${statCard('[ 01 ]', stats.active, 'Active messes', 'var(--leaf-500)')}
+        ${statCard('[ 02 ]', stats.mealsToday, 'Daily portions', 'var(--gold-500)')}
+        ${statCard('[ 03 ]', stats.expiringSoon, 'Messes expiring', 'var(--rust-500)')}
+        ${statCard('[ 04 ]', formatCurrency(stats.collectionsMonth), 'Ledger total', 'var(--leaf-700)', true)}
       </div>
 
+      <!-- ── Main Grid ──────────────────────────────────────── -->
       <div class="home-grid">
-        <!-- Today's Menu hero -->
+
+        <!-- Today's Specials Hero Card -->
         <div class="home-grid__full">
-          ${renderTodayHero(today, weekday, menu)}
+          ${renderTodayHero(weekday, menu)}
         </div>
 
-        <!-- Needs Attention -->
-        <div class="card">
-          <div class="card__header flex items-center justify-between">
-            <h2 class="font-display text-lg weight-bold">Needs Attention</h2>
+        <!-- Needs Attention (Log book style) -->
+        <div class="card card--ledger">
+          <div class="card__header" style="display:flex;align-items:center;justify-content:between;gap:var(--sp-3);">
+            <h2 class="card-title-serif">Messes Needing Care</h2>
             ${attention.length > 0 ? `<span class="badge badge--expiring">${attention.length}</span>` : ''}
           </div>
-          <div class="card__body" style="padding-top: 0; padding-bottom: var(--sp-2);">
+          <div class="card__body" style="padding-top:0;">
             ${attention.length === 0
-              ? `<div class="empty-state" style="padding: var(--sp-8) 0;">
-                   <div class="empty-state__icon">✓</div>
-                   <div class="empty-state__title">All clear</div>
-                   <div class="empty-state__text">No customers need attention right now.</div>
+              ? `<div class="empty-state" style="padding:var(--sp-8) 0 var(--sp-4);">
+                   <div class="empty-state__icon">
+                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                       <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                     </svg>
+                   </div>
+                   <div class="empty-state__title" style="font-family:var(--font-display);font-weight:600;">All records neat</div>
+                   <div class="empty-state__text">No customer messes need attention right now.</div>
                  </div>`
-              : attention.map(c => attentionItem(c, today)).join('')
+              : attention.map(c => attentionItem(c)).join('')
             }
           </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="card">
+        <!-- Quick Operations -->
+        <div class="card card--ledger">
           <div class="card__header">
-            <h2 class="font-display text-lg weight-bold">Quick Actions</h2>
+            <h2 class="card-title-serif">Quick Operations</h2>
           </div>
-          <div class="card__body flex flex-col gap-3">
-            <button class="btn btn--primary w-full" id="qa-add-customer">
-              <span>＋</span> Add New Customer
+          <div class="card__body" style="display:flex;flex-direction:column;gap:var(--sp-3);">
+            <button class="btn btn--primary w-full" id="qa-add-customer" style="justify-content:flex-start;gap:var(--sp-3);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add New Customer</span>
             </button>
-            <button class="btn btn--secondary w-full" id="qa-schedule">
-              <span>📅</span> Mark Today's Attendance
+            <button class="btn btn--secondary w-full" id="qa-schedule" style="justify-content:flex-start;gap:var(--sp-3);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>
+              <span>Ledger &amp; Attendance</span>
             </button>
-            <button class="btn btn--ghost w-full" id="qa-menu">
-              <span>🗓</span> Edit This Week's Menu
+            <button class="btn btn--ghost w-full" id="qa-menu" style="justify-content:flex-start;gap:var(--sp-3);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              <span>Update Weekly Menu</span>
             </button>
           </div>
         </div>
@@ -105,50 +122,57 @@ export function renderHome(container) {
     </div>
   `;
 
-  container.innerHTML = html;
-
-  // Set up card tilt on stat cards
+  // Tilt on stat cards (desktop)
   container.querySelectorAll('.stat-card').forEach(setupCardTilt);
 
-  // Quick action buttons
-  container.querySelector('#qa-add-customer').addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('bhojana:navigate', { detail: { page: 'customers', action: 'add' } }));
-  });
-  container.querySelector('#qa-schedule').addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('bhojana:navigate', { detail: { page: 'schedule' } }));
-  });
-  container.querySelector('#qa-menu').addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('bhojana:navigate', { detail: { page: 'menu' } }));
-  });
+  // Quick actions
+  container.querySelector('#qa-add-customer').addEventListener('click', () =>
+    window.dispatchEvent(new CustomEvent('bhojana:navigate', { detail: { page: 'customers', action: 'add' } }))
+  );
+  container.querySelector('#qa-schedule').addEventListener('click', () =>
+    window.dispatchEvent(new CustomEvent('bhojana:navigate', { detail: { page: 'schedule' } }))
+  );
+  container.querySelector('#qa-menu').addEventListener('click', () =>
+    window.dispatchEvent(new CustomEvent('bhojana:navigate', { detail: { page: 'menu' } }))
+  );
 }
 
 /* ── Sub-renderers ───────────────────────────────────────── */
 
-function statCard(icon, value, label, color, sub, isMono = false) {
+function renderGreetingTitle() {
+  const h = new Date().getHours();
+  let greet = 'Good morning';
+  if (h >= 12 && h < 17) greet = 'Good afternoon';
+  if (h >= 17) greet = 'Good evening';
+
+  const parts = greet.split(' ');
+  return `${parts[0]} <em>${parts[1]}</em>.`;
+}
+
+function statCard(indexStr, value, label, accentColor) {
   return `
-    <div class="stat-card flex flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <span class="stat-card__label">${label}</span>
-        <span class="stat-card__icon stat-card__icon--${color}">${icon}</span>
-      </div>
-      <div class="stat-card__value${isMono ? ' stat-card__value--mono' : ''}">${value}</div>
-      ${sub ? `<div class="stat-card__sub">${sub}</div>` : ''}
+    <div class="stat-card" style="--card-accent: ${accentColor}">
+      <div class="stat-card__index">${indexStr}</div>
+      <div class="stat-card__value">${value}</div>
+      <div class="stat-card__label">${label}</div>
     </div>
   `;
 }
 
-function renderTodayHero(today, weekday, menu) {
+function renderTodayHero(weekday, menu) {
   const specialBadge = menu.isSpecial
-    ? `<span class="badge badge--expiring" style="background:var(--gold-200);color:var(--gold-600);">✦ ${escapeHtml(menu.label)}</span>`
+    ? `<span class="badge badge-special-hero">✦ ${escapeHtml(menu.label)} Overrides</span>`
     : '';
 
   return `
     <div class="today-hero">
       <div class="today-hero__body">
-        <div class="today-hero__date">${weekday}'s Menu ${specialBadge}</div>
-        <div class="today-hero__title">Today's Meals</div>
+        <div class="today-hero__eyebrow" style="display:flex;align-items:center;gap:var(--sp-2);">
+          <span>${weekday}'s Menu</span>${specialBadge}
+        </div>
+        <div class="today-hero__title">Today’s <em>Specials</em></div>
         <div class="today-hero__menu">
-          ${['breakfast','lunch','dinner'].map(meal => `
+          ${['breakfast', 'lunch', 'dinner'].map(meal => `
             <div class="today-meal">
               <div class="today-meal__label">${meal}</div>
               <div class="today-meal__name">${escapeHtml(menu[meal] || '—')}</div>
@@ -160,33 +184,26 @@ function renderTodayHero(today, weekday, menu) {
   `;
 }
 
-function attentionItem(c, today) {
-  const statusColors = {
+function attentionItem(c) {
+  const colorMap = {
     expiring: 'var(--gold-500)',
     expired:  'var(--rust-500)',
     soon:     'var(--leaf-400)',
   };
-  const desc = {
-    expiring: `${daysLeftInPlan(c)} days left`,
-    expired:  'Plan ended',
+  const descMap = {
+    expiring: `${daysLeftInPlan(c)} days remaining`,
+    expired:  'Mess ended',
     soon:     `Starts ${formatDate(c.start_date)}`,
   };
 
   return `
     <div class="attention-item">
-      <span class="attention-item__dot" style="background:${statusColors[c.status]};"></span>
-      <div class="flex-1 min-w-0">
-        <div class="attention-item__name truncate">${escapeHtml(c.name)}</div>
-        <div class="attention-item__desc">${escapeHtml(c.id)} · ${desc[c.status] || ''}</div>
+      <span class="attention-item__dot" style="background:${colorMap[c.status]};"></span>
+      <div style="flex:1;min-width:0;">
+        <div class="attention-item__name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.name)}</div>
+        <div class="attention-item__desc">${escapeHtml(c.id)} &middot; ${descMap[c.status] || ''}</div>
       </div>
       ${getStatusBadgeHtml(c.status)}
     </div>
   `;
-}
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Morning';
-  if (h < 17) return 'Afternoon';
-  return 'Evening';
 }

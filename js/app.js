@@ -11,6 +11,7 @@ import { renderSchedule }  from './pages/schedule.js';
 import { showToast }       from './components/toast.js';
 import { showConfirm }     from './components/confirm.js';
 import { isIOS, isInStandaloneMode } from './utils.js';
+import { icons, iconLg }  from './icons.js';
 
 /* ── State ───────────────────────────────────────────────── */
 let currentPage = 'home';
@@ -65,7 +66,7 @@ async function boot() {
   const overlay = document.getElementById('loading-overlay');
   if (overlay) {
     overlay.classList.add('is-hiding');
-    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+    setTimeout(() => overlay.remove(), 500);
   }
 
   // Determine initial page from hash
@@ -128,7 +129,7 @@ function buildNavigation() {
 }
 
 function getNavIcon(page) {
-  return { home: '🏠', menu: '🗓', customers: '👥', schedule: '📅' }[page] || '●';
+  return icons[{ home: 'home', menu: 'menu', customers: 'customers', schedule: 'schedule' }[page]] || '';
 }
 
 /* ── Event Listeners ─────────────────────────────────────── */

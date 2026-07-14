@@ -9,9 +9,10 @@ import {
   daysLeftInPlan, getInitials, calcBalance, escapeHtml,
   debounce, setupCardTilt
 } from '../utils.js';
-import { showToast } from '../components/toast.js';
+import { showToast }  from '../components/toast.js';
 import { createModal } from '../components/modal.js';
 import { showConfirm } from '../components/confirm.js';
+import { icons }       from '../icons.js';
 
 const PLAN_TYPES = [
   { value: 'full',           label: 'Full Day (Breakfast + Lunch + Dinner)' },
@@ -89,11 +90,11 @@ function renderList(container) {
 
   if (filtered.length === 0) {
     list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state__icon">👥</div>
-        <div class="empty-state__title">${searchQuery ? 'No results found' : 'No customers yet'}</div>
+      <div class="empty-state" style="padding:var(--sp-10) var(--sp-4);">
+        <div class="empty-state__icon">${icons.customers}</div>
+        <div class="empty-state__title">${searchQuery ? 'No results' : 'No customers yet'}</div>
         <div class="empty-state__text">${searchQuery ? 'Try a different name or phone number.' : 'Add your first customer to get started.'}</div>
-        ${!searchQuery ? `<button class="btn btn--primary mt-4" id="empty-add-btn">＋ Add Customer</button>` : ''}
+        ${!searchQuery ? `<button class="btn btn--primary" id="empty-add-btn" style="margin:var(--sp-4) auto 0;display:flex;">Add Customer</button>` : ''}
       </div>
     `;
     container.querySelector('#empty-add-btn')?.addEventListener('click', () => openCustomerModal(null, container));
@@ -116,6 +117,12 @@ function renderList(container) {
     card.addEventListener('click', e => {
       if (e.target.closest('.customer-card__actions')) return;
       openCustomerModal(DB.getCustomer(card.dataset.id), container);
+    });
+    card.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) {
+        e.preventDefault();
+        openCustomerModal(DB.getCustomer(card.dataset.id), container);
+      }
     });
   });
 
@@ -176,10 +183,10 @@ function customerCard(c, today) {
       </div>
       <div class="flex flex-col items-end gap-2 flex-none">
         <div class="customer-card__balance customer-card__balance--${balClass}">${formatCurrency(balance)}</div>
-        <div class="customer-card__actions flex gap-2">
-          <button class="btn btn--ghost btn--sm customer-schedule-btn" data-id="${c.id}" aria-label="Schedule">📅</button>
-          <button class="btn btn--ghost btn--sm customer-edit-btn" data-id="${c.id}" aria-label="Edit">✎</button>
-          <button class="btn btn--danger btn--sm customer-delete-btn" data-id="${c.id}" aria-label="Delete">✕</button>
+        <div class="customer-card__actions flex gap-1">
+          <button class="btn btn--ghost btn--sm btn--icon customer-schedule-btn" data-id="${c.id}" aria-label="View schedule" title="Schedule">${icons.calendarCheck}</button>
+          <button class="btn btn--ghost btn--sm btn--icon customer-edit-btn" data-id="${c.id}" aria-label="Edit" title="Edit">${icons.edit}</button>
+          <button class="btn btn--danger btn--sm btn--icon customer-delete-btn" data-id="${c.id}" aria-label="Delete" title="Delete">${icons.trash}</button>
         </div>
       </div>
     </div>
