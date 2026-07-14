@@ -79,7 +79,7 @@ const SEED_MENU = `
 /* ── Init ────────────────────────────────────────────────── */
 export async function initDB() {
   const SQL = await window.initSqlJs({
-    locateFile: file => `/vendor/${file}`
+    locateFile: file => `vendor/${file}`
   });
 
   const saved = localStorage.getItem(STORAGE_KEY);
