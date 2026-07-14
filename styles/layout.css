@@ -361,17 +361,16 @@
 @media (min-width: 768px) {
   #main-content {
     margin-left: var(--sidebar-w);
-    padding-top: var(--sp-6);
-    padding-bottom: var(--sp-8);
-    padding-left: var(--sp-6);
-    padding-right: var(--sp-6);
+    padding-top: var(--sp-8);
+    padding-bottom: var(--sp-10);
+    padding-left: var(--sp-8);
+    padding-right: var(--sp-8);
   }
 }
 
-/* Inner page wrapper - caps max width and centers */
+/* Inner page wrapper - fills available viewport width */
 .page-container {
-  max-width: var(--content-max);
-  margin: 0 auto;
+  width: 100%;
   padding-top: var(--sp-3);
   padding-bottom: var(--sp-6);
 }

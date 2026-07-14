@@ -4,7 +4,7 @@
  * Bump CACHE_NAME on every deploy.
  */
 
-const CACHE_NAME = 'bhojana-v9';
+const CACHE_NAME = 'bhojana-v11';
 
 const ASSETS = [
   './',
