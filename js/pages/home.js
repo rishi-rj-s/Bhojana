@@ -16,6 +16,7 @@ export function renderHome(container) {
   const weekday  = getWeekdayName(today);
   const customers = DB.getCustomers();
   const stats    = DB.getHomeStats(today);
+  const greeting = renderGreetingTitle();
 
   // Today's menu — special day overrides weekly template
   const special = DB.getSpecialDay(today);
@@ -52,11 +53,11 @@ export function renderHome(container) {
 
       <!-- ── Greeting (Editorial) ───────────────────────────── -->
       <div class="home-greeting">
-        <div class="home-greeting__eyebrow">${dayStr} — ${dateStr}</div>
-        <h1 class="home-greeting__title">${renderGreetingTitle()}</h1>
+        <div class="home-greeting__eyebrow">${dayStr} — ${dateStr} <span style="margin-left: var(--sp-1);">${greeting.icon}</span></div>
+        <h1 class="home-greeting__title">${greeting.title}</h1>
         <p class="home-greeting__sub">${customers.length === 0
           ? 'Add your first customer to get started.'
-          : `${stats.active} active customer${stats.active !== 1 ? 's' : ''} &middot; ${stats.mealsToday} meal${stats.mealsToday !== 1 ? 's' : ''} to prepare today`
+          : `${greeting.message} &middot; <strong>${stats.active}</strong> active mess${stats.active !== 1 ? 'es' : ''} &middot; <strong>${stats.mealsToday}</strong> portions today.`
         }</p>
       </div>
 
@@ -142,11 +143,29 @@ export function renderHome(container) {
 function renderGreetingTitle() {
   const h = new Date().getHours();
   let greet = 'Good morning';
-  if (h >= 12 && h < 17) greet = 'Good afternoon';
-  if (h >= 17) greet = 'Good evening';
+  let icon = '☀️';
+  let msg = "Let's get today's meals prepared and sorted.";
+
+  if (h >= 12 && h < 17) {
+    greet = 'Good afternoon';
+    icon = '🌤️';
+    msg = 'Hope the lunch deliveries went smoothly.';
+  } else if (h >= 17 && h < 22) {
+    greet = 'Good evening';
+    icon = '🌙';
+    msg = 'Ready for the evening dinner deliveries?';
+  } else if (h >= 22 || h < 4) {
+    greet = 'Good night';
+    icon = '✨';
+    msg = "Prepping for tomorrow's kitchen schedule.";
+  }
 
   const parts = greet.split(' ');
-  return `${parts[0]} <em>${parts[1]}</em>.`;
+  return {
+    title: `${parts[0]} <em>${parts[1]}</em>.`,
+    icon: icon,
+    message: msg
+  };
 }
 
 function statCard(indexStr, value, label, accentColor) {
