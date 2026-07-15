@@ -124,8 +124,9 @@ function buildNavigation() {
     });
   }
 
-  // Settings button
+  // Settings buttons (desktop & mobile)
   document.getElementById('settings-btn')?.addEventListener('click', openSettings);
+  document.getElementById('mobile-settings-btn')?.addEventListener('click', openSettings);
 }
 
 function getNavIcon(page) {
