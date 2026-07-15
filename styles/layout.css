@@ -376,7 +376,7 @@
 @media (max-width: 767px) {
   #main-content {
     padding-top: var(--topbar-total);
-    padding-bottom: var(--nav-total);
+    padding-bottom: calc(var(--nav-total) + var(--sp-12));
     padding-left: calc(var(--sp-4) + var(--safe-left));
     padding-right: calc(var(--sp-4) + var(--safe-right));
   }
