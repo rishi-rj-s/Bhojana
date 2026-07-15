@@ -29,33 +29,92 @@
   margin: var(--sp-3) 0;
 }
 
-/* ── Stat Card (Ledger style) ───────────────────────────── */
+/* ── Stat Card (Redesigned Modern Bento Style) ───────────────────────────── */
 .stat-card {
+  position: relative;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-left: 3.5px solid var(--card-accent, var(--leaf-500));
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: var(--sp-4) var(--sp-5);
-  box-shadow: var(--shadow-xs);
+  box-shadow: 0 4px 20px -2px rgba(28, 25, 23, 0.03);
   cursor: default;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--sp-2.5);
+  min-height: 135px;
   transition:
     box-shadow   var(--duration-base) var(--ease-out),
     border-color var(--duration-base) var(--ease-out),
     transform    var(--duration-base) var(--ease-out);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  min-height: 110px;
 }
 
-.stat-card:hover {
-  box-shadow: var(--shadow-sm);
-  border-color: var(--color-border-mid);
-  transform: translateY(-2px);
+/* Background glows for a very subtle, modern gradient highlight */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 100% 0%, var(--card-accent-light, transparent) 0%, transparent 60%);
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.stat-card:hover::before {
+  opacity: 1;
 }
 
 .stat-card:active { transform: scale(0.98); }
+
+/* Card specific subtle background accents */
+.stat-card--active {
+  --card-accent-light: rgba(46, 111, 64, 0.08); /* leaf-500 light */
+}
+.stat-card--portions {
+  --card-accent-light: rgba(197, 157, 78, 0.08); /* gold-500 light */
+}
+.stat-card--expiring {
+  --card-accent-light: rgba(168, 67, 67, 0.08); /* rust-500 light */
+}
+.stat-card--expiring.stat-card--alert-pulse {
+  --card-accent-light: rgba(168, 67, 67, 0.12);
+  border-color: rgba(168, 67, 67, 0.25);
+  animation: card-alert-glow 2s infinite ease-in-out;
+}
+
+@keyframes card-alert-glow {
+  0%, 100% { box-shadow: 0 4px 20px -2px rgba(168, 67, 67, 0.03); }
+  50% { box-shadow: 0 4px 24px 2px rgba(168, 67, 67, 0.1); border-color: rgba(168, 67, 67, 0.4); }
+}
+
+/* Premium Dark Mode Card (Ledger Total) */
+.stat-card--dark {
+  background: linear-gradient(135deg, var(--leaf-900) 0%, #0c2014 100%);
+  border: 1px solid rgba(197, 157, 78, 0.25); /* Thin gold border */
+  box-shadow: 0 8px 30px -4px rgba(18, 47, 30, 0.3);
+}
+
+.stat-card--dark::before {
+  background: radial-gradient(circle at 100% 0%, rgba(197, 157, 78, 0.15) 0%, transparent 70%);
+}
+
+.stat-card--dark:hover {
+  border-color: var(--gold-400);
+  box-shadow: 0 12px 36px -4px rgba(18, 47, 30, 0.45);
+}
+
+/* Header row (Index & Icon) */
+.stat-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
 
 .stat-card__index {
   font-family: var(--font-mono);
@@ -64,21 +123,168 @@
   letter-spacing: 0.1em;
 }
 
+.stat-card--dark .stat-card__index {
+  color: rgba(250, 243, 227, 0.4); /* gold-100 faded */
+}
+
+/* Icon Badges */
+.stat-card__icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  transition: transform var(--duration-base) var(--ease-spring);
+}
+
+.stat-card:hover .stat-card__icon-badge {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.badge--leaf {
+  background: var(--leaf-50);
+  color: var(--leaf-700);
+  border: 1px solid rgba(46, 111, 64, 0.15);
+}
+
+.badge--gold {
+  background: var(--gold-100);
+  color: var(--gold-600);
+  border: 1px solid rgba(197, 157, 78, 0.2);
+}
+
+.badge--rust {
+  background: var(--rust-100);
+  color: var(--rust-600);
+  border: 1px solid rgba(168, 67, 67, 0.15);
+}
+
+.badge--dark-gold {
+  background: rgba(197, 157, 78, 0.1);
+  color: var(--gold-400);
+  border: 1px solid rgba(197, 157, 78, 0.3);
+}
+
+/* Body (Value & Label) */
+.stat-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  position: relative;
+  z-index: 2;
+}
+
 .stat-card__value {
-  font-family: var(--font-mono);
-  font-size: clamp(1.4rem, 3.5vw, 1.85rem);
-  font-weight: 500;
+  font-family: var(--font-display); /* Premium serif display */
+  font-size: clamp(1.6rem, 3.8vw, 2.1rem);
+  font-weight: 600;
   color: var(--color-text);
-  line-height: 1.1;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.stat-card--dark .stat-card__value {
+  color: var(--gold-200); /* Luxury gold color */
+  text-shadow: 0 2px 10px rgba(197, 157, 78, 0.1);
 }
 
 .stat-card__label {
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-text-mid);
+}
+
+.stat-card--dark .stat-card__label {
+  color: rgba(250, 243, 227, 0.6);
+}
+
+/* Footer & Trends */
+.stat-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: 11px;
+  color: var(--color-text-faint);
+  border-top: 1px dashed var(--color-border);
+  padding-top: var(--sp-2);
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.stat-card--dark .stat-card__footer {
+  border-top-color: rgba(250, 243, 227, 0.1);
+  color: rgba(250, 243, 227, 0.4);
+}
+
+.stat-card__trend {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1.5);
+  font-weight: var(--weight-medium);
+}
+
+.text-gold {
+  color: var(--gold-400);
+}
+
+.trend-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.trend-dot--green { background-color: var(--leaf-500); }
+.trend-dot--red { background-color: var(--rust-500); }
+.trend-dot--gold { background-color: var(--gold-500); }
+
+.trend-dot.pulse {
+  animation: pulse-dot 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+/* Portions Breakdown in Card 2 */
+.portions-breakdown {
+  display: flex;
+  gap: var(--sp-2);
+  border-top: 1px dashed var(--color-border);
+  padding-top: var(--sp-2);
+  width: 100%;
+}
+
+.portion-pill {
+  background: var(--rice-100);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--sp-2);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--color-text-mid);
+  flex-grow: 1;
+  text-align: center;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.portion-pill:hover {
+  background: var(--gold-100);
+  border-color: var(--gold-300);
+  color: var(--gold-600);
+}
+
+.portion-pill strong {
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 /* ── Generic Card ────────────────────────────────────────── */
