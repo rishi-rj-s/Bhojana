@@ -7,9 +7,10 @@ import * as DB from '../db.js';
 import {
   todayISO, formatDate, formatCurrency, getWeekdayName,
   getPlanLabel, getStatusBadgeHtml, getCustomerStatus,
-  daysLeftInPlan, setupCardTilt, escapeHtml
+  daysLeftInPlan, setupCardTilt, escapeHtml, getPlanMeals
 } from '../utils.js';
 import { showToast } from '../components/toast.js';
+import { icons } from '../icons.js';
 
 export function renderHome(container) {
   const today    = todayISO();
@@ -17,6 +18,19 @@ export function renderHome(container) {
   const customers = DB.getCustomers();
   const stats    = DB.getHomeStats(today);
   const greeting = renderGreetingTitle();
+
+  // Portion breakdown for active customers today
+  const activeCustomers = customers.filter(c => getCustomerStatus(c, today) === 'active');
+  let breakfastCount = 0;
+  let lunchCount = 0;
+  let dinnerCount = 0;
+  activeCustomers.forEach(c => {
+    const meals = getPlanMeals(c.plan_type);
+    if (meals.includes('breakfast')) breakfastCount++;
+    if (meals.includes('lunch'))     lunchCount++;
+    if (meals.includes('dinner'))    dinnerCount++;
+  });
+  const totalPortionsToday = breakfastCount + lunchCount + dinnerCount;
 
   // Today's menu — special day overrides weekly template
   const special = DB.getSpecialDay(today);
@@ -57,16 +71,16 @@ export function renderHome(container) {
         <h1 class="home-greeting__title">${greeting.title}</h1>
         <p class="home-greeting__sub">${customers.length === 0
           ? 'Add your first customer to get started.'
-          : `${greeting.message} &middot; <strong>${stats.active}</strong> active mess${stats.active !== 1 ? 'es' : ''} &middot; <strong>${stats.mealsToday}</strong> portions today.`
+          : `${greeting.message} &middot; <strong>${stats.active}</strong> active mess${stats.active !== 1 ? 'es' : ''} &middot; <strong>${totalPortionsToday}</strong> portions today.`
         }</p>
       </div>
 
-      <!-- ── Stat Cards (Ledger slips style) ────────────────── -->
+      <!-- ── Stat Cards (Redesigned Bento Style) ────────────────── -->
       <div class="home-stats-row" id="home-stats">
-        ${statCard('[ 01 ]', stats.active, 'Active messes', 'var(--leaf-500)')}
-        ${statCard('[ 02 ]', stats.mealsToday, 'Daily portions', 'var(--gold-500)')}
-        ${statCard('[ 03 ]', stats.expiringSoon, 'Messes expiring', 'var(--rust-500)')}
-        ${statCard('[ 04 ]', formatCurrency(stats.collectionsMonth), 'Ledger total', 'var(--leaf-700)', true)}
+        ${activeMessesCard(stats.active)}
+        ${dailyPortionsCard(totalPortionsToday, breakfastCount, lunchCount, dinnerCount)}
+        ${expiringSoonCard(stats.expiringSoon)}
+        ${ledgerTotalCard(formatCurrency(stats.collectionsMonth))}
       </div>
 
       <!-- ── Main Grid ──────────────────────────────────────── -->
@@ -168,12 +182,90 @@ function renderGreetingTitle() {
   };
 }
 
-function statCard(indexStr, value, label, accentColor) {
+function activeMessesCard(value) {
   return `
-    <div class="stat-card" style="--card-accent: ${accentColor}">
-      <div class="stat-card__index">${indexStr}</div>
-      <div class="stat-card__value">${value}</div>
-      <div class="stat-card__label">${label}</div>
+    <div class="stat-card stat-card--active" style="--card-accent: var(--leaf-500)">
+      <div class="stat-card__header">
+        <span class="stat-card__index">[ 01 ]</span>
+        <div class="stat-card__icon-badge badge--leaf">
+          ${icons.customers}
+        </div>
+      </div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${value}</span>
+        <span class="stat-card__label">Active Messes</span>
+      </div>
+      <div class="stat-card__footer">
+        <span class="stat-card__trend"><span class="trend-dot trend-dot--green"></span>On System</span>
+      </div>
+    </div>
+  `;
+}
+
+function dailyPortionsCard(total, breakfast, lunch, dinner) {
+  return `
+    <div class="stat-card stat-card--portions" style="--card-accent: var(--gold-500)">
+      <div class="stat-card__header">
+        <span class="stat-card__index">[ 02 ]</span>
+        <div class="stat-card__icon-badge badge--gold">
+          ${icons.schedule}
+        </div>
+      </div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${total}</span>
+        <span class="stat-card__label">Daily Portions</span>
+      </div>
+      <div class="stat-card__footer portions-breakdown">
+        <span class="portion-pill" title="Breakfast">B: <strong>${breakfast}</strong></span>
+        <span class="portion-pill" title="Lunch">L: <strong>${lunch}</strong></span>
+        <span class="portion-pill" title="Dinner">D: <strong>${dinner}</strong></span>
+      </div>
+    </div>
+  `;
+}
+
+function expiringSoonCard(value) {
+  const isAlert = value > 0;
+  return `
+    <div class="stat-card stat-card--expiring ${isAlert ? 'stat-card--alert-pulse' : ''}" style="--card-accent: var(--rust-500)">
+      <div class="stat-card__header">
+        <span class="stat-card__index">[ 03 ]</span>
+        <div class="stat-card__icon-badge badge--rust">
+          ${icons.alertTriangle}
+        </div>
+      </div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${value}</span>
+        <span class="stat-card__label">Messes Expiring</span>
+      </div>
+      <div class="stat-card__footer">
+        <span class="stat-card__trend">
+          ${isAlert 
+            ? `<span class="trend-dot trend-dot--red pulse"></span>Requires Action` 
+            : `<span class="trend-dot trend-dot--green"></span>All Neat`
+          }
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+function ledgerTotalCard(valueStr) {
+  return `
+    <div class="stat-card stat-card--dark" style="--card-accent: var(--gold-500)">
+      <div class="stat-card__header">
+        <span class="stat-card__index">[ 04 ]</span>
+        <div class="stat-card__icon-badge badge--dark-gold">
+          ${icons.trendingUp}
+        </div>
+      </div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${valueStr}</span>
+        <span class="stat-card__label">Ledger Total</span>
+      </div>
+      <div class="stat-card__footer">
+        <span class="stat-card__trend text-gold"><span class="trend-dot trend-dot--gold"></span>This Month</span>
+      </div>
     </div>
   `;
 }
