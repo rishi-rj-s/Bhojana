@@ -301,17 +301,52 @@ export function getHomeStats(today) {
   return { active, mealsToday, expiringSoon, collectionsMonth };
 }
 
+export function getPlanEndDate(customer) {
+  const attendance = getAttendanceForCustomer(customer.id);
+  const skippedDates = new Set(
+    attendance
+      .filter(a => a.status === 'skipped')
+      .map(a => a.date)
+  );
+
+  const [y, m, d] = customer.start_date.split('-').map(Number);
+  let currentDate = new Date(y, m - 1, d);
+  let daysCounted = 0;
+
+  while (daysCounted < customer.duration_days) {
+    const curYear = currentDate.getFullYear();
+    const curMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const curDay = String(currentDate.getDate()).padStart(2, '0');
+    const dateStr = `${curYear}-${curMonth}-${curDay}`;
+
+    if (!skippedDates.has(dateStr)) {
+      daysCounted++;
+    }
+    if (daysCounted < customer.duration_days) {
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  }
+
+  const endYear = currentDate.getFullYear();
+  const endMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const endDay = String(currentDate.getDate()).padStart(2, '0');
+  return `${endYear}-${endMonth}-${endDay}`;
+}
+
 export function getCustomerStatus(customer, today) {
-  const start = new Date(customer.start_date);
-  const end = new Date(customer.start_date);
-  end.setDate(end.getDate() + customer.duration_days - 1);
-  const todayDate = new Date(today);
+  const start = customer.start_date;
+  const end = getPlanEndDate(customer);
 
-  if (todayDate < start) return 'soon';
-  if (todayDate > end) return 'expired';
+  if (today < start) return 'soon';
+  if (today > end) return 'expired';
 
-  // Expiring = ends within 7 days
-  const daysLeft = Math.ceil((end - todayDate) / (1000 * 60 * 60 * 24));
+  const [endY, endM, endD] = end.split('-').map(Number);
+  const [todayY, todayM, todayD] = today.split('-').map(Number);
+
+  const endDObj = new Date(endY, endM - 1, endD);
+  const todayDObj = new Date(todayY, todayM - 1, todayD);
+
+  const daysLeft = Math.round((endDObj - todayDObj) / (1000 * 60 * 60 * 24));
   if (daysLeft <= 7) return 'expiring';
   return 'active';
 }

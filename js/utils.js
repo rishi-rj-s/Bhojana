@@ -2,14 +2,23 @@
  * BHOJANA — Utility Functions (utils.js)
  */
 
+import { getPlanEndDate, getCustomerStatus as getStatusFromDB } from './db.js';
+
 /* ── Date Helpers ────────────────────────────────────────── */
 export function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function toISO(date) {
   // date: Date object → yyyy-mm-dd
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function parseISO(str) {
@@ -64,9 +73,7 @@ export function daysBetween(isoA, isoB) {
 }
 
 /* ── Plan Helpers ────────────────────────────────────────── */
-export function getPlanEndDate(customer) {
-  return addDays(customer.start_date, customer.duration_days - 1);
-}
+export { getPlanEndDate };
 
 export function isDateInPlan(customer, isoDate) {
   const start = customer.start_date;
@@ -91,22 +98,26 @@ export function daysLeftInPlan(customer) {
 /* ── Customer Helpers ────────────────────────────────────── */
 export function getPlanLabel(planType) {
   const labels = {
-    'full':           'Full Day (3 meals)',
-    'lunch_dinner':   'Lunch & Dinner',
-    'lunch_only':     'Lunch Only',
-    'breakfast_only': 'Breakfast Only',
-    'dinner_only':    'Dinner Only',
+    'breakfast_only':   'Breakfast Only',
+    'lunch_only':       'Lunch Only',
+    'dinner_only':      'Dinner Only',
+    'breakfast_lunch':  'Breakfast & Lunch',
+    'breakfast_dinner': 'Breakfast & Dinner',
+    'lunch_dinner':     'Lunch & Dinner',
+    'full':             'All 3 (Full Day)',
   };
   return labels[planType] || planType;
 }
 
 export function getPlanMeals(planType) {
   const meals = {
-    'full':           ['breakfast','lunch','dinner'],
-    'lunch_dinner':   ['lunch','dinner'],
-    'lunch_only':     ['lunch'],
-    'breakfast_only': ['breakfast'],
-    'dinner_only':    ['dinner'],
+    'breakfast_only':   ['breakfast'],
+    'lunch_only':       ['lunch'],
+    'dinner_only':      ['dinner'],
+    'breakfast_lunch':  ['breakfast', 'lunch'],
+    'breakfast_dinner': ['breakfast', 'dinner'],
+    'lunch_dinner':     ['lunch', 'dinner'],
+    'full':             ['breakfast', 'lunch', 'dinner'],
   };
   return meals[planType] || [];
 }
@@ -159,15 +170,7 @@ export function escapeHtml(str) {
 
 /* ── Status helpers ──────────────────────────────────────── */
 export function getCustomerStatus(customer, today = todayISO()) {
-  const start = customer.start_date;
-  const end   = getPlanEndDate(customer);
-
-  if (today < start) return 'soon';
-  if (today > end)   return 'expired';
-
-  const daysLeft = daysBetween(today, end);
-  if (daysLeft <= 7) return 'expiring';
-  return 'active';
+  return getStatusFromDB(customer, today);
 }
 
 export function getStatusBadgeHtml(status) {

@@ -797,6 +797,80 @@
 .form-hint  { font-size: var(--text-xs); color: var(--color-text-faint); }
 .form-error { font-size: var(--text-xs); color: var(--rust-500); }
 
+/* Custom Plan Selector Cards */
+.plan-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+.plan-option-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-3.5);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  user-select: none;
+  min-height: 48px;
+}
+
+.plan-option-card:hover {
+  border-color: var(--gold-300);
+  background: var(--gold-50);
+}
+
+.plan-option-card.is-selected {
+  border-color: var(--gold-500);
+  background: var(--gold-100);
+  box-shadow: 0 2px 8px rgba(221, 166, 46, 0.12);
+}
+
+.plan-option-card.span-2 {
+  grid-column: span 2;
+}
+
+.plan-option-card__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-option-card__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.plan-option-card__check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all var(--duration-fast) var(--ease-out);
+  flex-shrink: 0;
+  margin-left: var(--sp-2);
+}
+
+.plan-option-card.is-selected .plan-option-card__check {
+  border-color: var(--gold-500);
+  background: var(--gold-500);
+  color: var(--color-surface);
+}
+
+.plan-option-card__check svg {
+  stroke-width: 3.5;
+}
+
 /* ── Search Bar ──────────────────────────────────────────── */
 .search-bar { position: relative; width: 100%; }
 

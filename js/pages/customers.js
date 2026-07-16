@@ -15,11 +15,13 @@ import { showConfirm } from '../components/confirm.js';
 import { icons }       from '../icons.js';
 
 const PLAN_TYPES = [
-  { value: 'full',           label: 'Full Day (Breakfast + Lunch + Dinner)' },
-  { value: 'lunch_dinner',   label: 'Lunch & Dinner' },
-  { value: 'lunch_only',     label: 'Lunch Only' },
   { value: 'breakfast_only', label: 'Breakfast Only' },
+  { value: 'lunch_only',     label: 'Lunch Only' },
   { value: 'dinner_only',    label: 'Dinner Only' },
+  { value: 'breakfast_lunch', label: 'Breakfast & Lunch' },
+  { value: 'breakfast_dinner', label: 'Breakfast & Dinner' },
+  { value: 'lunch_dinner',   label: 'Lunch & Dinner' },
+  { value: 'full',           label: 'All 3 (Full Day)' },
 ];
 
 let searchQuery = '';
@@ -215,10 +217,26 @@ function openCustomerModal(customer, container) {
         <input id="c-phone" class="form-input" type="tel" value="${escapeHtml(c.phone || '')}" placeholder="10-digit number" maxlength="15" autocomplete="tel" />
       </div>
       <div class="form-group">
-        <label class="form-label form-label--required" for="c-plan">Meal Plan</label>
-        <select id="c-plan" class="form-select">
-          ${planOptions}
-        </select>
+        <label class="form-label form-label--required">Meal Plan</label>
+        <div class="plan-selector-grid" role="radiogroup" aria-label="Meal Plan">
+          ${PLAN_TYPES.map(pt => {
+            const isSelected = (c.plan_type || 'full') === pt.value;
+            return `
+              <div class="plan-option-card${isSelected ? ' is-selected' : ''}${pt.value === 'full' ? ' span-2' : ''}" 
+                   data-value="${pt.value}" role="radio" aria-checked="${isSelected ? 'true' : 'false'}" tabindex="0">
+                <div class="plan-option-card__inner">
+                  <div class="plan-option-card__title">${escapeHtml(pt.label)}</div>
+                </div>
+                <div class="plan-option-card__check">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <input type="hidden" id="c-plan" value="${escapeHtml(c.plan_type || 'full')}" />
       </div>
       <div class="flex gap-4">
         <div class="form-group flex-1">
@@ -250,6 +268,30 @@ function openCustomerModal(customer, container) {
 
   modal.open();
 
+  // Custom radio cards interaction logic
+  const planCards = modal.overlay.querySelectorAll('.plan-option-card');
+  planCards.forEach(card => {
+    card.addEventListener('click', () => {
+      planCards.forEach(cCard => {
+        cCard.classList.remove('is-selected');
+        cCard.setAttribute('aria-checked', 'false');
+      });
+      card.classList.add('is-selected');
+      card.setAttribute('aria-checked', 'true');
+      const planInput = document.getElementById('c-plan');
+      if (planInput) {
+        planInput.value = card.dataset.value;
+        planInput.dispatchEvent(new Event('input'));
+      }
+    });
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        card.click();
+      }
+    });
+  });
+
   // Live preview
   const updatePreview = () => {
     const cost     = parseFloat(document.getElementById('c-cost')?.value)     || 0;
@@ -263,13 +305,13 @@ function openCustomerModal(customer, container) {
       endDate.setDate(endDate.getDate() + duration - 1);
       const endStr = endDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
       const total = cost * duration;
-      preview.innerHTML = `Ends <strong>${endStr}</strong> · Total: <strong>${formatCurrency(total)}</strong> · Advance covers <strong>${Math.floor(advance / cost)} days</strong>`;
+      preview.innerHTML = `Ends (Est.): <strong>${endStr}</strong> · Total: <strong>${formatCurrency(total)}</strong> · Advance covers <strong>${Math.floor(advance / cost)} days</strong>`;
     } else {
       preview.innerHTML = '';
     }
   };
 
-  ['c-cost','c-advance','c-start','c-duration'].forEach(id => {
+  ['c-cost','c-advance','c-start','c-duration','c-plan'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', updatePreview);
   });
   updatePreview();

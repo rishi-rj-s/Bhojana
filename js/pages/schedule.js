@@ -241,32 +241,19 @@ function renderCalendarPanel(container, customer) {
       // Cycle: none → had → skipped → none
       let next = current === '' ? 'had' : current === 'had' ? 'skipped' : '';
 
+      const balEl = panel.querySelector('#balance-value');
+      const oldText = balEl ? balEl.textContent : '';
+
       DB.setAttendance(customer.id, date, next || null);
 
-      // Update cell visually
-      cell.dataset.status = next;
-      cell.classList.remove('cal-day--had', 'cal-day--skipped');
-      if (next === 'had')     cell.classList.add('cal-day--had');
-      if (next === 'skipped') cell.classList.add('cal-day--skipped');
+      // Re-render calendar panel to update the grid (locks/unlocks days dynamically)
+      renderCalendarPanel(container, customer);
 
-      // Update balance with tick animation
-      const allAttNow  = DB.getAttendanceForCustomer(customer.id);
-      const newHad     = allAttNow.filter(a => a.status === 'had').length;
-      const newBalance = calcBalance(customer, newHad);
-      const balEl = panel.querySelector('#balance-value');
-      if (balEl) {
-        const newText = formatCurrency(newBalance);
-        animateBalanceTick(balEl, newText, balEl.textContent);
-        balEl.className = `report-balance__value report-balance__value--${newBalance >= 0 ? 'positive' : 'negative'}`;
+      // Animate the balance on the new element
+      const newBalEl = panel.querySelector('#balance-value');
+      if (newBalEl && oldText) {
+        animateBalanceTick(newBalEl, newBalEl.textContent, oldText);
       }
-
-      // Update month stats
-      const updatedAtt = DB.getAttendanceForMonth(customer.id, viewYear, viewMonth);
-      const mHad = updatedAtt.filter(a => a.status === 'had').length;
-      const mSkip = updatedAtt.filter(a => a.status === 'skipped').length;
-      panel.querySelectorAll('.report-stat__value')[0].textContent = mHad;
-      panel.querySelectorAll('.report-stat__value')[1].textContent = mSkip;
-      panel.querySelectorAll('.report-stat__value')[2].textContent = newHad;
 
       showToast(
         next === 'had' ? 'Marked: Had food ✓' : next === 'skipped' ? 'Marked: Skipped' : 'Attendance cleared',
@@ -325,16 +312,15 @@ function buildCalendarDays(customer, year, month, attMap) {
     const isoDate = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = isDateToday(isoDate);
     const inPlan  = isDateInPlan(customer, isoDate);
-    const isFuture = isoDate > today;
     const status  = attMap[isoDate] || '';
 
     let classes = 'cal-day';
     let attrs   = `data-date="${isoDate}" data-status="${status}"`;
     let ariaLabel = `${d}: `;
 
-    if (!inPlan || isFuture) {
+    if (!inPlan) {
       classes += ' cal-day--locked';
-      ariaLabel += !inPlan ? 'outside plan' : 'future';
+      ariaLabel += 'outside plan';
     } else {
       if (status === 'had')     { classes += ' cal-day--had';     ariaLabel += 'had food'; }
       else if (status === 'skipped') { classes += ' cal-day--skipped'; ariaLabel += 'skipped'; }
@@ -345,9 +331,9 @@ function buildCalendarDays(customer, year, month, attMap) {
 
     html += `
       <div class="${classes}" ${attrs}
-           role="${!inPlan || isFuture ? 'presentation' : 'button'}"
+           role="${!inPlan ? 'presentation' : 'button'}"
            aria-label="${ariaLabel}"
-           ${!inPlan || isFuture ? 'aria-hidden="true"' : 'tabindex="0"'}>
+           ${!inPlan ? 'aria-hidden="true"' : 'tabindex="0"'}>
         ${d}
       </div>
     `;
