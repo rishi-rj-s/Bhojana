@@ -24,7 +24,9 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS attendance (
     customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
     date        TEXT NOT NULL,
-    status      TEXT NOT NULL CHECK(status IN ('had','skipped')),
+    breakfast   TEXT CHECK(breakfast IN ('had','skipped')),
+    lunch       TEXT CHECK(lunch IN ('had','skipped')),
+    dinner      TEXT CHECK(dinner IN ('had','skipped')),
     PRIMARY KEY (customer_id, date)
   );
 
@@ -87,6 +89,51 @@ export async function initDB() {
     try {
       const buf = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
       db = new SQL.Database(buf);
+
+      // Upgrade schema if table has old 'status' column
+      const info = query("PRAGMA table_info(attendance)");
+      const hasStatus = info.some(col => col.name === 'status');
+      if (hasStatus) {
+        console.log("Upgrading attendance database schema...");
+        const oldRecords = query("SELECT * FROM attendance");
+        
+        db.run("DROP TABLE attendance");
+        db.run(`
+          CREATE TABLE attendance (
+            customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+            date        TEXT NOT NULL,
+            breakfast   TEXT CHECK(breakfast IN ('had','skipped')),
+            lunch       TEXT CHECK(lunch IN ('had','skipped')),
+            dinner      TEXT CHECK(dinner IN ('had','skipped')),
+            PRIMARY KEY (customer_id, date)
+          )
+        `);
+
+        for (const row of oldRecords) {
+          const custRow = query("SELECT plan_type FROM customers WHERE id = ?", [row.customer_id])[0];
+          const planType = custRow ? custRow.plan_type : 'full';
+          
+          const meals = {
+            'breakfast_only':   ['breakfast'],
+            'lunch_only':       ['lunch'],
+            'dinner_only':      ['dinner'],
+            'breakfast_lunch':  ['breakfast', 'lunch'],
+            'breakfast_dinner': ['breakfast', 'dinner'],
+            'lunch_dinner':     ['lunch', 'dinner'],
+            'full':             ['breakfast', 'lunch', 'dinner'],
+          }[planType] || ['breakfast', 'lunch', 'dinner'];
+
+          const bf = meals.includes('breakfast') ? row.status : null;
+          const lh = meals.includes('lunch') ? row.status : null;
+          const dn = meals.includes('dinner') ? row.status : null;
+          
+          db.run(
+            "INSERT INTO attendance (customer_id, date, breakfast, lunch, dinner) VALUES (?,?,?,?,?)",
+            [row.customer_id, row.date, bf, lh, dn]
+          );
+        }
+        save();
+      }
     } catch (e) {
       console.warn('DB load failed, starting fresh:', e);
       db = new SQL.Database();
@@ -206,25 +253,41 @@ export function getAttendanceForCustomer(customerId) {
   return query('SELECT * FROM attendance WHERE customer_id=? ORDER BY date ASC', [customerId]);
 }
 
-export function setAttendance(customerId, date, status) {
-  if (status === null || status === undefined || status === '') {
+export function setAttendance(customerId, date, mealStatuses) {
+  if (!mealStatuses || (!mealStatuses.breakfast && !mealStatuses.lunch && !mealStatuses.dinner)) {
     run('DELETE FROM attendance WHERE customer_id=? AND date=?', [customerId, date]);
   } else {
     run(
-      'INSERT OR REPLACE INTO attendance (customer_id, date, status) VALUES (?,?,?)',
-      [customerId, date, status]
+      `INSERT OR REPLACE INTO attendance (customer_id, date, breakfast, lunch, dinner)
+       VALUES (?,?,?,?,?)`,
+      [customerId, date, mealStatuses.breakfast || null, mealStatuses.lunch || null, mealStatuses.dinner || null]
     );
   }
 }
 
 export function getAttendanceStats(customerId) {
-  const rows = query(
-    `SELECT status, COUNT(*) as count FROM attendance WHERE customer_id=? GROUP BY status`,
-    [customerId]
-  );
-  const stats = { had: 0, skipped: 0 };
-  rows.forEach(r => { stats[r.status] = r.count; });
-  return stats;
+  const customer = getCustomer(customerId);
+  if (!customer) return { had: 0, skipped: 0 };
+
+  const allAtt = getAttendanceForCustomer(customerId);
+  const planMeals = getPlanMeals(customer.plan_type);
+
+  let had = 0;
+  let skipped = 0;
+
+  allAtt.forEach(row => {
+    const hasHad = planMeals.some(meal => row[meal] === 'had');
+    if (hasHad) {
+      had++;
+    } else {
+      const allSkipped = planMeals.length > 0 && planMeals.every(meal => row[meal] === 'skipped');
+      if (allSkipped) {
+        skipped++;
+      }
+    }
+  });
+
+  return { had, skipped };
 }
 
 /* ── Weekly Menu ─────────────────────────────────────────── */
@@ -288,10 +351,13 @@ export function getHomeStats(today) {
     if (status === 'active') active++;
     if (status === 'expiring') expiringSoon++;
 
-    // Count this month's "had" days × daily cost
+    // Count this month's "had" days (days where they had at least one meal) × daily cost
     const [y, m] = todayStr.split('-').map(Number);
     const att = getAttendanceForMonth(c.id, y, m);
-    const hadDays = att.filter(a => a.status === 'had').length;
+    const planMeals = getPlanMeals(c.plan_type);
+    const hadDays = att.filter(row => {
+      return planMeals.some(meal => row[meal] === 'had');
+    }).length;
     collectionsMonth += hadDays * c.daily_cost;
   });
 
@@ -301,23 +367,78 @@ export function getHomeStats(today) {
   return { active, mealsToday, expiringSoon, collectionsMonth };
 }
 
+function getPlanMeals(planType) {
+  const meals = {
+    'breakfast_only':   ['breakfast'],
+    'lunch_only':       ['lunch'],
+    'dinner_only':      ['dinner'],
+    'breakfast_lunch':  ['breakfast', 'lunch'],
+    'breakfast_dinner': ['breakfast', 'dinner'],
+    'lunch_dinner':     ['lunch', 'dinner'],
+    'full':             ['breakfast', 'lunch', 'dinner'],
+  };
+  return meals[planType] || [];
+}
+
+export function getPlanEndDate(customer) {
+  const attendance = getAttendanceForCustomer(customer.id);
+  const planMeals = getPlanMeals(customer.plan_type);
+
+  const skippedDates = new Set();
+  attendance.forEach(row => {
+    const allSkipped = planMeals.length > 0 && planMeals.every(meal => row[meal] === 'skipped');
+    if (allSkipped) {
+      skippedDates.add(row.date);
+    }
+  });
+
+  const [y, m, d] = customer.start_date.split('-').map(Number);
+  let currentDate = new Date(y, m - 1, d);
+  let daysCounted = 0;
+
+  while (daysCounted < customer.duration_days) {
+    const curYear = currentDate.getFullYear();
+    const curMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const curDay = String(currentDate.getDate()).padStart(2, '0');
+    const dateStr = `${curYear}-${curMonth}-${curDay}`;
+
+    if (!skippedDates.has(dateStr)) {
+      daysCounted++;
+    }
+    if (daysCounted < customer.duration_days) {
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  }
+
+  const endYear = currentDate.getFullYear();
+  const endMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const endDay = String(currentDate.getDate()).padStart(2, '0');
+  return `${endYear}-${endMonth}-${endDay}`;
+}
+
 export function getCustomerStatus(customer, today) {
-  const start = new Date(customer.start_date);
-  const end = new Date(customer.start_date);
-  end.setDate(end.getDate() + customer.duration_days - 1);
-  const todayDate = new Date(today);
+  const start = customer.start_date;
+  const end = getPlanEndDate(customer);
 
-  if (todayDate < start) return 'soon';
-  if (todayDate > end) return 'expired';
+  if (today < start) return 'soon';
+  if (today > end) return 'expired';
 
-  // Expiring = ends within 7 days
-  const daysLeft = Math.ceil((end - todayDate) / (1000 * 60 * 60 * 24));
+  const [endY, endM, endD] = end.split('-').map(Number);
+  const [todayY, todayM, todayD] = today.split('-').map(Number);
+
+  const endDObj = new Date(endY, endM - 1, endD);
+  const todayDObj = new Date(todayY, todayM - 1, todayD);
+
+  const daysLeft = Math.round((endDObj - todayDObj) / (1000 * 60 * 60 * 24));
   if (daysLeft <= 7) return 'expiring';
   return 'active';
 }
 
 export function calcBalance(customer) {
   const allAtt = getAttendanceForCustomer(customer.id);
-  const hadCount = allAtt.filter(a => a.status === 'had').length;
+  const planMeals = getPlanMeals(customer.plan_type);
+  const hadCount = allAtt.filter(row => {
+    return planMeals.some(meal => row[meal] === 'had');
+  }).length;
   return customer.advance - (hadCount * customer.daily_cost);
 }

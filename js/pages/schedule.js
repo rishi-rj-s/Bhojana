@@ -9,9 +9,10 @@ import {
   getDaysInMonth, getFirstWeekdayOfMonth, isDateInPlan,
   isDateToday, getPlanEndDate, getInitials, calcBalance,
   getCustomerStatus, getStatusBadgeHtml, escapeHtml,
-  debounce, animateBalanceTick
+  debounce, animateBalanceTick, getPlanMeals
 } from '../utils.js';
 import { showToast } from '../components/toast.js';
+import { createModal } from '../components/modal.js';
 import { icons }     from '../icons.js';
 
 let selectedCustomerId = null;
@@ -135,15 +136,23 @@ function renderCalendarPanel(container, customer) {
 
   const attRows = DB.getAttendanceForMonth(customer.id, viewYear, viewMonth);
   const attMap  = {};
-  attRows.forEach(r => { attMap[r.date] = r.status; });
+  attRows.forEach(r => { attMap[r.date] = r; });
 
   const allAtt  = DB.getAttendanceForCustomer(customer.id);
-  const hadCount = allAtt.filter(a => a.status === 'had').length;
-  const balance  = calcBalance(customer, hadCount);
+  const planMeals = getPlanMeals(customer.plan_type);
 
   // Month stats for this customer
-  const monthHad     = attRows.filter(a => a.status === 'had').length;
-  const monthSkipped = attRows.filter(a => a.status === 'skipped').length;
+  const monthHad = attRows.filter(row => {
+    return planMeals.some(meal => row[meal] === 'had');
+  }).length;
+  const monthSkipped = attRows.filter(row => {
+    return planMeals.length > 0 && planMeals.every(meal => row[meal] === 'skipped');
+  }).length;
+
+  const hadCount = allAtt.filter(row => {
+    return planMeals.some(meal => row[meal] === 'had');
+  }).length;
+  const balance  = DB.calcBalance(customer);
 
   panel.innerHTML = `
     <!-- Month navigation -->
@@ -235,43 +244,8 @@ function renderCalendarPanel(container, customer) {
   // Day cell click
   panel.querySelectorAll('.cal-day:not(.cal-day--locked):not(.cal-day--empty)').forEach(cell => {
     cell.addEventListener('click', () => {
-      const date    = cell.dataset.date;
-      const current = cell.dataset.status || '';
-
-      // Cycle: none → had → skipped → none
-      let next = current === '' ? 'had' : current === 'had' ? 'skipped' : '';
-
-      DB.setAttendance(customer.id, date, next || null);
-
-      // Update cell visually
-      cell.dataset.status = next;
-      cell.classList.remove('cal-day--had', 'cal-day--skipped');
-      if (next === 'had')     cell.classList.add('cal-day--had');
-      if (next === 'skipped') cell.classList.add('cal-day--skipped');
-
-      // Update balance with tick animation
-      const allAttNow  = DB.getAttendanceForCustomer(customer.id);
-      const newHad     = allAttNow.filter(a => a.status === 'had').length;
-      const newBalance = calcBalance(customer, newHad);
-      const balEl = panel.querySelector('#balance-value');
-      if (balEl) {
-        const newText = formatCurrency(newBalance);
-        animateBalanceTick(balEl, newText, balEl.textContent);
-        balEl.className = `report-balance__value report-balance__value--${newBalance >= 0 ? 'positive' : 'negative'}`;
-      }
-
-      // Update month stats
-      const updatedAtt = DB.getAttendanceForMonth(customer.id, viewYear, viewMonth);
-      const mHad = updatedAtt.filter(a => a.status === 'had').length;
-      const mSkip = updatedAtt.filter(a => a.status === 'skipped').length;
-      panel.querySelectorAll('.report-stat__value')[0].textContent = mHad;
-      panel.querySelectorAll('.report-stat__value')[1].textContent = mSkip;
-      panel.querySelectorAll('.report-stat__value')[2].textContent = newHad;
-
-      showToast(
-        next === 'had' ? 'Marked: Had food ✓' : next === 'skipped' ? 'Marked: Skipped' : 'Attendance cleared',
-        next ? 'success' : 'info'
-      );
+      const date = cell.dataset.date;
+      openDayAttendanceModal(customer, date, container);
     });
   });
 
@@ -309,10 +283,9 @@ function renderCalendarPanel(container, customer) {
 
 /* ── Calendar day builder ────────────────────────────────── */
 function buildCalendarDays(customer, year, month, attMap) {
-  const today      = todayISO();
   const daysCount  = getDaysInMonth(year, month);
   const firstDay   = getFirstWeekdayOfMonth(year, month); // 0=Sun..6=Sat
-  const planEnd    = getPlanEndDate(customer);
+  const planMeals  = getPlanMeals(customer.plan_type);
 
   let html = '';
 
@@ -325,33 +298,154 @@ function buildCalendarDays(customer, year, month, attMap) {
     const isoDate = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = isDateToday(isoDate);
     const inPlan  = isDateInPlan(customer, isoDate);
-    const isFuture = isoDate > today;
-    const status  = attMap[isoDate] || '';
+    const row     = attMap[isoDate];
+    const status  = getDayStatus(row, planMeals);
 
     let classes = 'cal-day';
-    let attrs   = `data-date="${isoDate}" data-status="${status}"`;
+    let attrs   = `data-date="${isoDate}"`;
     let ariaLabel = `${d}: `;
 
-    if (!inPlan || isFuture) {
+    if (!inPlan) {
       classes += ' cal-day--locked';
-      ariaLabel += !inPlan ? 'outside plan' : 'future';
+      ariaLabel += 'outside plan';
     } else {
-      if (status === 'had')     { classes += ' cal-day--had';     ariaLabel += 'had food'; }
+      if (status === 'had')          { classes += ' cal-day--had';     ariaLabel += 'had food'; }
       else if (status === 'skipped') { classes += ' cal-day--skipped'; ariaLabel += 'skipped'; }
       else                           { ariaLabel += 'not logged'; }
     }
 
     if (isToday) classes += ' cal-day--today';
 
+    let mealDotsHtml = '';
+    if (inPlan) {
+      mealDotsHtml = `<div class="cal-day-meals">` + planMeals.map(meal => {
+        const mealStatus = row ? row[meal] : '';
+        const mealChar = meal[0].toUpperCase();
+        let statusCls = '';
+        if (mealStatus === 'had') statusCls = 'meal-dot--had';
+        else if (mealStatus === 'skipped') statusCls = 'meal-dot--skipped';
+        else statusCls = 'meal-dot--none';
+        return `<span class="meal-dot ${statusCls}" title="${meal}: ${mealStatus || 'not logged'}">${mealChar}</span>`;
+      }).join('') + `</div>`;
+    }
+
     html += `
       <div class="${classes}" ${attrs}
-           role="${!inPlan || isFuture ? 'presentation' : 'button'}"
+           role="${!inPlan ? 'presentation' : 'button'}"
            aria-label="${ariaLabel}"
-           ${!inPlan || isFuture ? 'aria-hidden="true"' : 'tabindex="0"'}>
-        ${d}
+           ${!inPlan ? 'aria-hidden="true"' : 'tabindex="0"'}>
+        <span class="cal-day-num">${d}</span>
+        ${mealDotsHtml}
       </div>
     `;
   }
 
   return html;
+}
+
+function getDayStatus(row, planMeals) {
+  if (!row) return '';
+  const hasHad = planMeals.some(meal => row[meal] === 'had');
+  if (hasHad) return 'had';
+  const allSkipped = planMeals.length > 0 && planMeals.every(meal => row[meal] === 'skipped');
+  if (allSkipped) return 'skipped';
+  return '';
+}
+
+function openDayAttendanceModal(customer, date, container) {
+  const planMeals = getPlanMeals(customer.plan_type);
+  const attRows = DB.getAttendanceForCustomer(customer.id);
+  const row = attRows.find(r => r.date === date) || { breakfast: null, lunch: null, dinner: null };
+
+  const statusMap = {
+    breakfast: row.breakfast,
+    lunch: row.lunch,
+    dinner: row.dinner
+  };
+
+  const modal = createModal({
+    id: 'day-attendance-modal',
+    title: formatDate(date),
+    body: `
+      <div style="display:flex;flex-direction:column;gap:var(--sp-4);">
+        <p style="font-size:var(--text-sm);color:var(--color-text-mid);margin-bottom:var(--sp-2);">
+          Select delivery status for each meal in customer's plan:
+        </p>
+        ${planMeals.map(meal => {
+          const currentStatus = statusMap[meal] || '';
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-2.5) 0;border-bottom:1px solid var(--color-border);">
+              <span style="text-transform:capitalize;font-weight:600;font-size:var(--text-sm);">${meal}</span>
+              <div class="meal-toggle-group" data-meal="${meal}">
+                <button class="meal-btn${currentStatus === 'had' ? ' is-active-had' : ''}" data-status="had">Had</button>
+                <button class="meal-btn${currentStatus === 'skipped' ? ' is-active-skipped' : ''}" data-status="skipped">Skipped</button>
+                <button class="meal-btn${currentStatus === '' ? ' is-active-none' : ''}" data-status="">None</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `,
+    footer: `
+      <button class="btn btn--ghost" id="day-cancel">Cancel</button>
+      <button class="btn btn--primary" id="day-save">Save Changes</button>
+    `
+  });
+
+  modal.open();
+
+  // Hook toggle button clicks
+  const modalEl = modal.overlay;
+  modalEl.querySelectorAll('.meal-toggle-group').forEach(group => {
+    const buttons = group.querySelectorAll('.meal-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => {
+          b.classList.remove('is-active-had', 'is-active-skipped', 'is-active-none');
+        });
+        const status = btn.dataset.status;
+        if (status === 'had') btn.classList.add('is-active-had');
+        else if (status === 'skipped') btn.classList.add('is-active-skipped');
+        else btn.classList.add('is-active-none');
+        
+        group.dataset.selected = status;
+      });
+    });
+  });
+
+  document.getElementById('day-cancel').addEventListener('click', modal.close);
+  document.getElementById('day-save').addEventListener('click', () => {
+    const updatedStatuses = {};
+    modalEl.querySelectorAll('.meal-toggle-group').forEach(group => {
+      const meal = group.dataset.meal;
+      const selected = group.dataset.selected !== undefined 
+        ? group.dataset.selected 
+        : (statusMap[meal] || '');
+      updatedStatuses[meal] = selected || null;
+    });
+
+    // Save to DB
+    const newStatuses = {
+      breakfast: statusMap.breakfast,
+      lunch: statusMap.lunch,
+      dinner: statusMap.dinner,
+      ...updatedStatuses
+    };
+
+    DB.setAttendance(customer.id, date, newStatuses);
+
+    // Re-render
+    const balEl = container.querySelector('#balance-value');
+    const oldText = balEl ? balEl.textContent : '';
+
+    renderCalendarPanel(container, customer);
+
+    const newBalEl = container.querySelector('#balance-value');
+    if (newBalEl && oldText) {
+      animateBalanceTick(newBalEl, newBalEl.textContent, oldText);
+    }
+
+    showToast('Attendance updated', 'success');
+    modal.close();
+  });
 }
