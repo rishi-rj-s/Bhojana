@@ -196,7 +196,7 @@ function activeMessesCard(value) {
         <span class="stat-card__label">Active Messes</span>
       </div>
       <div class="stat-card__footer">
-        <span class="stat-card__trend"><span class="trend-dot trend-dot--green"></span>On System</span>
+        <span class="stat-card__trend"><span class="trend-dot trend-dot--green"></span><span>On System</span></span>
       </div>
     </div>
   `;
@@ -241,8 +241,8 @@ function expiringSoonCard(value) {
       <div class="stat-card__footer">
         <span class="stat-card__trend">
           ${isAlert 
-            ? `<span class="trend-dot trend-dot--red pulse"></span>Requires Action` 
-            : `<span class="trend-dot trend-dot--green"></span>All Neat`
+            ? `<span class="trend-dot trend-dot--red pulse"></span><span>Requires Action</span>` 
+            : `<span class="trend-dot trend-dot--green"></span><span>All Neat</span>`
           }
         </span>
       </div>
@@ -264,7 +264,7 @@ function ledgerTotalCard(valueStr) {
         <span class="stat-card__label">Ledger Total</span>
       </div>
       <div class="stat-card__footer">
-        <span class="stat-card__trend text-gold"><span class="trend-dot trend-dot--gold"></span>This Month</span>
+        <span class="stat-card__trend text-gold"><span class="trend-dot trend-dot--gold"></span><span>This Month</span></span>
       </div>
     </div>
   `;
